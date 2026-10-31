@@ -1,0 +1,47 @@
+# 依赖
+node_modules/
+
+# 打包产物
+dist/
+dist_new/
+build/
+out/
+*.dmg
+*.exe
+*.blockmap
+.cache/
+
+# 私密配置（账号密码/设备标识）—— 绝对不要提交
+settings.json
+.device_id
+
+# 本机临时文件
+node.exe
+*.log
+*.bat
+*.vbs
+
+# 开发期临时脚本与截图
+_*.js
+_make_icon.py
+shoot.js
+*.bak*
+shots/
+_备份/
+朋友圈_*/
+
+# 编辑器/系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+.workbuddy/
+
+# 云端构建产物下载目录
+_mac_dist/
+
+# 签名常量（本机私有，不进仓库）
+config.local.json
+
+# 重渲染的临时截图（只保留 docs/ 里选中的几张）
+shots_clean/

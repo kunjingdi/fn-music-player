@@ -1,0 +1,69 @@
+{
+  "name": "fn-music-player",
+  "version": "1.5.1",
+  "description": "飞牛音乐 · 桌面播放器（独立 exe）",
+  "main": "electron-main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --x64",
+    "dist:mac": "electron-builder --mac --arm64 --x64"
+  },
+  "author": "junze",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.junze.fnmusic",
+    "productName": "飞牛音乐播放器",
+    "asar": true,
+    "files": [
+      "electron-main.js",
+      "preload.js",
+      "server.cjs",
+      "bt-smtc.cjs",
+      "index.html"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "飞牛音乐播放器",
+      "artifactName": "飞牛音乐播放器-${version}-安装程序.exe"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "icon": "icon.png",
+      "category": "public.app-category.music",
+      "identity": null,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "darkModeSupport": true,
+      "artifactName": "FnMusicPlayer-${version}-${arch}.dmg"
+    },
+    "dmg": {
+      "title": "FnMusicPlayer ${version}",
+      "contents": [
+        { "x": 150, "y": 200 },
+        { "x": 400, "y": 200, "type": "link", "path": "/Applications" }
+      ]
+    }
+  },
+  "dependencies": {}
+}

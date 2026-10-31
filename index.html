@@ -1,0 +1,3668 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<!-- 触屏设备上双击 / 双指会把页面放大，整块 UI 就被顶到屏幕外去了，这里锁死缩放 -->
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<title>飞牛音乐 · 桌面播放器</title>
+<style>
+:root{
+  --bg-0:#081120; --bg-1:#0b2038; --bg-2:#0e3052;
+  --glass:rgba(160,210,255,.10); --glass-strong:rgba(170,215,255,.16);
+  --stroke:rgba(160,215,255,.22); --stroke-strong:rgba(170,220,255,.40);
+  --txt:#eaf4ff; --txt-dim:#9fc0e0; --txt-faint:#5f82a8;
+  --accent:#4da8ff; --accent-2:#7cc7ff; --accent-3:#35e0ff;
+  --glow:rgba(77,168,255,.40); --glow-soft:rgba(53,200,255,.60);
+  --bg-glow-1:rgba(53,140,255,.28); --bg-glow-2:rgba(53,224,255,.16);
+  --viz-bg-top:rgba(15,48,86,.96); --viz-bg-bottom:rgba(7,16,31,.96);
+  --input-bg:rgba(10,25,45,.55);
+  --danger:#ff6b7a;
+}
+/* 主题：暗紫 */
+body.theme-violet{
+  --bg-0:#100a1f; --bg-1:#1c1038; --bg-2:#2a1854;
+  --glass:rgba(205,175,255,.10); --glass-strong:rgba(215,185,255,.16);
+  --stroke:rgba(205,180,255,.22); --stroke-strong:rgba(215,190,255,.40);
+  --txt:#f4ecff; --txt-dim:#c2aee2; --txt-faint:#8272a8;
+  --accent:#a86bff; --accent-2:#c49aff; --accent-3:#e05fff;
+  --glow:rgba(168,107,255,.40); --glow-soft:rgba(190,120,255,.60);
+  --bg-glow-1:rgba(150,80,255,.26); --bg-glow-2:rgba(224,95,255,.15);
+  --viz-bg-top:rgba(48,26,96,.96); --viz-bg-bottom:rgba(16,8,34,.96);
+  --input-bg:rgba(30,16,58,.55);
+}
+/* 主题：翠绿 */
+body.theme-emerald{
+  --bg-0:#071712; --bg-1:#0b2820; --bg-2:#0e3a2c;
+  --glass:rgba(160,255,220,.10); --glass-strong:rgba(170,255,225,.16);
+  --stroke:rgba(160,255,220,.22); --stroke-strong:rgba(170,255,225,.40);
+  --txt:#eafff6; --txt-dim:#9fe0c8; --txt-faint:#5fa892;
+  --accent:#2dd4a7; --accent-2:#7ce8c8; --accent-3:#4df0c2;
+  --glow:rgba(45,212,167,.40); --glow-soft:rgba(77,232,200,.60);
+  --bg-glow-1:rgba(45,180,140,.24); --bg-glow-2:rgba(77,240,194,.14);
+  --viz-bg-top:rgba(14,58,44,.96); --viz-bg-bottom:rgba(4,20,15,.96);
+  --input-bg:rgba(8,36,27,.55);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+/* 触屏：双击不再触发缩放（manipulation 只留滚动/点击），文字也不会被系统自动放大。
+   进度条/音量条单独设 touch-action:none，让手指按住拖动时页面不跟着乱动 */
+html{touch-action:manipulation; -webkit-text-size-adjust:100%; text-size-adjust:100%}
+body{
+  font-family:"Segoe UI","Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+  color:var(--txt); background:
+    radial-gradient(1200px 800px at 85% -10%, var(--bg-glow-1), transparent 60%),
+    radial-gradient(900px 700px at -10% 110%, var(--bg-glow-2), transparent 55%),
+    linear-gradient(135deg,var(--bg-0) 0%,var(--bg-1) 48%,var(--bg-2) 100%);
+  background-color:var(--bg-0);
+  overflow:hidden; -webkit-font-smoothing:antialiased;
+}
+body::before{ /* 科技网格 */
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:.5;
+  background-image:linear-gradient(rgba(120,180,255,.05) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(120,180,255,.05) 1px,transparent 1px);
+  background-size:44px 44px;
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input{font-family:inherit;color:inherit}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:rgba(150,200,255,.25);border-radius:4px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ============ 登录 ============ */
+#login{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:50}
+.login-card{
+  width:min(460px,92vw);padding:40px 38px;border-radius:20px;
+  background:var(--glass);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+  border:1px solid var(--stroke);box-shadow:0 30px 80px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.08);
+}
+.logo{display:flex;align-items:center;gap:14px;margin-bottom:6px}
+.logo .disc{width:44px;height:44px;border-radius:50%;flex:none;
+  background:conic-gradient(from 0deg,#0b3052,#123c6b,#0b3052,#1b5c9e,#0b3052);
+  border:1px solid var(--stroke-strong);position:relative;
+  box-shadow:0 0 18px rgba(77,168,255,.5)}
+.logo .disc::after{content:"";position:absolute;inset:15px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+.logo h1{font-size:21px;font-weight:600;letter-spacing:.5px}
+.logo h1 small{display:block;font-size:12px;font-weight:400;color:var(--txt-dim);letter-spacing:2px}
+.field{margin-top:18px}
+.field label{display:block;font-size:13px;color:var(--txt-dim);margin-bottom:7px}
+.field input{
+  width:100%;padding:12px 14px;border-radius:12px;font-size:15px;
+  background:var(--input-bg);border:1px solid var(--stroke);outline:none;
+  transition:.2s;color:var(--txt);
+}
+.field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(77,168,255,.18)}
+.field input::placeholder{color:var(--txt-faint)}
+.btn-login{
+  width:100%;margin-top:26px;padding:13px;border-radius:12px;font-size:16px;font-weight:600;
+  background:linear-gradient(135deg,var(--accent),var(--accent-3));color:#04203a;
+  box-shadow:0 8px 24px rgba(53,190,255,.35);transition:.2s;
+}
+.btn-login:hover{transform:translateY(-1px);box-shadow:0 12px 30px rgba(53,190,255,.5)}
+.btn-login:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.login-err{margin-top:14px;font-size:13px;color:var(--danger);min-height:18px;text-align:center}
+.login-tip{margin-top:14px;font-size:12px;color:var(--txt-faint);line-height:1.7}
+
+/* ============ 主界面 ============ */
+#app{position:fixed;inset:0;display:none;flex-direction:column}
+header{
+  height:58px;flex:none;display:flex;align-items:center;gap:16px;padding:0 22px;
+  background:var(--glass);backdrop-filter:blur(16px);border-bottom:1px solid var(--stroke);
+  /* header 有 backdrop-filter 会自建层叠上下文，不提升整体层级的话，
+     里面 z-index 更高的下拉菜单会被后面的 main 盖住 */
+  position:relative; z-index:50;
+}
+header .brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:16px}
+header .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--accent-3);box-shadow:0 0 10px var(--accent-3)}
+.tabs{display:flex;gap:6px;margin-left:8px}
+.tab{
+  padding:8px 16px;border-radius:10px;font-size:14px;color:var(--txt-dim);transition:.15s;
+}
+.tab.active{color:var(--txt);background:var(--glass-strong);border:1px solid var(--stroke)}
+.spacer{flex:1}
+.searchbox{position:relative;width:260px}
+.searchbox input{
+  width:100%;padding:9px 14px 9px 34px;border-radius:12px;font-size:14px;
+  background:var(--input-bg);border:1px solid var(--stroke);outline:none;color:var(--txt);
+}
+.searchbox input:focus{border-color:var(--accent)}
+/* 深色皮肤下浏览器默认占位符几乎看不见，统一交给主题色 */
+.searchbox input::placeholder{color:var(--txt-faint);opacity:1}
+/* 放大镜同样走 SVG（emoji 在浅色皮肤里是彩色块，太跳） */
+.searchbox::before{content:"";position:absolute;left:12px;top:50%;transform:translateY(-50%);
+  width:15px;height:15px;background:var(--txt);opacity:.45;pointer-events:none;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.1' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.7-3.7'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.1' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.7-3.7'/%3E%3C/svg%3E") center/contain no-repeat}
+.vol-row{display:flex;align-items:center;gap:12px;width:100%;max-width:94%}
+.vol-row .vol-ico{font-size:18px;color:var(--txt-dim);flex:none;cursor:pointer;line-height:1;transition:.15s;
+  display:flex;align-items:center;justify-content:center}
+.vol-row .vol-ico:hover{color:var(--txt)}
+.vol-bar{position:relative;flex:1;height:6px;border-radius:3px;background:rgba(150,200,255,.16);cursor:pointer;touch-action:none}
+/* 同样给手指留一圈命中区（灯箱里这条只有 2px 高） */
+.vol-bar::before{content:"";position:absolute;left:0;right:0;top:-9px;bottom:-9px}
+.vol-bar .fill{position:absolute;left:0;top:0;height:100%;border-radius:3px;
+  background:linear-gradient(90deg,var(--accent),var(--accent-3));box-shadow:0 0 10px var(--glow-soft)}
+.vol-bar .knob{position:absolute;top:50%;width:14px;height:14px;border-radius:50%;background:#fff;transform:translate(-50%,-50%);
+  box-shadow:0 0 8px rgba(0,0,0,.6);opacity:0;transition:.15s}
+.vol-bar:hover .knob{opacity:1}
+.user-chip{font-size:13px;color:var(--txt-dim);display:flex;align-items:center;gap:8px}
+.user-chip .avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-3));color:#04203a;display:flex;align-items:center;justify-content:center;font-weight:700}
+.btn-logout{padding:7px 13px;border-radius:10px;font-size:13px;color:var(--txt-dim);border:1px solid var(--stroke);transition:.15s}
+.btn-logout:hover{color:var(--txt);border-color:var(--danger);background:rgba(255,107,122,.12)}
+.btn-theme{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-size:16px;color:var(--txt-dim);border:1px solid var(--stroke);transition:.15s;flex:none;background:var(--input-bg)}
+.btn-theme:hover{color:var(--txt);border-color:var(--accent);box-shadow:0 0 10px var(--glow)}
+
+main{flex:1;display:flex;overflow:hidden}
+
+/* 播放页布局：左大歌词 + 右(播放器主体/三波形横排) */
+#player{flex:1;display:flex;gap:18px;padding:18px 22px;min-width:0}
+.col-lyric{flex:1.18;min-width:0;display:flex;flex-direction:column}
+.col-player{flex:0.82;min-width:0;display:flex;flex-direction:column;gap:16px}
+.panel{border-radius:20px;background:var(--glass);border:1px solid var(--stroke);backdrop-filter:blur(18px);overflow:hidden}
+.player-box{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  border-radius:20px;background:var(--glass);border:1px solid var(--stroke);backdrop-filter:blur(18px);padding:20px}
+/* 波形区：一整块面板，内部上中下三小块(连续波形/实时波形/频谱柱)，不隔横线；实色深底兜底，防全屏合成失效变白 */
+.viz-row{flex:0.72;min-width:0;display:flex;flex-direction:column;gap:0;
+  border-radius:20px;background:linear-gradient(180deg,var(--viz-bg-top),var(--viz-bg-bottom));
+  border:1px solid var(--stroke);backdrop-filter:blur(18px);overflow:hidden}
+.viz{position:relative;flex:1;display:flex;align-items:center;justify-content:center;min-height:0;background:transparent}
+.viz canvas{width:100%;height:100%;display:block}
+.wave-tag{position:absolute;top:10px;left:14px;font-size:11px;letter-spacing:2px;color:var(--txt-faint);text-transform:uppercase;z-index:2;pointer-events:none}
+#lyricPanel{flex:1;min-height:0;position:relative;display:flex;flex-direction:column;
+  /* .panel 默认 overflow:hidden，会把浮在面子上沿的 A−/A＋ 裁掉一截；
+     歌词本身在 #lyrics 里另有 overflow:hidden，所以这里放开不会漏字 */
+  overflow:visible}
+#lyricPanel .wave-tag{position:static;padding:16px 18px 0;flex:none;font-size:12px}
+/* 提词器式歌词：当前句固定在面板正中 1/2 基准线，其余行按距离缩放+明暗 */
+#lyrics{flex:1;min-height:0;overflow:hidden;position:relative}
+.lyric-centerline{position:absolute;left:12%;right:12%;top:50%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(124,199,255,.30),transparent);
+  pointer-events:none;z-index:2}
+#lyricInner{position:relative;will-change:transform;transition:transform .45s cubic-bezier(.25,.8,.35,1)}
+.lyric-line{padding:9px 6px;font-size:var(--lyric-size,28px);color:var(--txt-faint);line-height:1.5;border-radius:10px;
+  text-align:center;transform-origin:center;
+  /* 一句一行，绝不折行：折行会让行高忽高忽低，提词器的居中基准也跟着抖；
+     超出容器的部分先裁掉，当前句再由 .scroll 横向滚出来 */
+  white-space:nowrap;overflow:hidden;
+  transition:color .32s,opacity .32s,transform .32s}
+/* 歌词本体：要能单独横移，所以套一层行内块 */
+.lyric-line .tx{display:inline-block;vertical-align:top;will-change:transform}
+/* 当前句太长、一行放不下时来回滚一遍：先露出句首，滚到句尾，再回来
+   —— 距离和时长由 JS 算好写进 --pad / --run */
+.lyric-line.scroll .tx{animation:lyric-run var(--run,6s) ease-in-out infinite alternate}
+/* 滚过的歌词恢复到左对齐：文本比容器宽时 CSS 本来就不居中（往右溢出），
+   起点就是句首，所以不用额外修正 */
+@keyframes lyric-run{
+  from{transform:translateX(var(--from,0px))}
+  to  {transform:translateX(var(--to,0px))}
+}
+@media (prefers-reduced-motion:reduce){
+  .lyric-line.scroll .tx{animation:none}
+}
+.lyric-line.active{color:var(--txt);font-weight:700;text-shadow:0 0 24px rgba(120,200,255,.85)}
+.lyric-line.no-lyric{color:var(--txt-faint);text-align:center;font-size:clamp(14px,2.4vh,24px)}
+/* 歌词字号调节按钮（面板右上角） */
+.lyric-tools{position:absolute;top:12px;right:14px;z-index:3;display:flex;gap:6px}
+.lyric-tools button{padding:4px 11px;border-radius:8px;font-size:12px;color:var(--txt-dim);
+  background:var(--glass-strong);border:1px solid var(--stroke);cursor:pointer;transition:.15s;line-height:1.4}
+.lyric-tools button:hover{color:var(--txt);border-color:var(--accent);box-shadow:0 0 10px rgba(77,168,255,.3)}
+
+/* 唱片 */
+.view-switch{position:absolute;top:14px;right:16px;z-index:3;width:34px;height:34px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--txt-dim);
+  background:var(--glass-strong);border:1px solid var(--stroke);cursor:pointer;transition:.15s;line-height:1}
+.view-switch:hover{color:var(--txt);border-color:var(--accent);box-shadow:0 0 10px var(--glow)}
+/* 封面模式：大方形圆角封面（不转），与转盘互斥切换 */
+.cover-card{width:min(210px,26vh);aspect-ratio:1;border-radius:18px;overflow:hidden;flex:none;
+  background:linear-gradient(135deg,#123c6b,#0b2038);border:1px solid var(--stroke-strong);
+  box-shadow:0 18px 50px rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center}
+.cover-card img{width:100%;height:100%;object-fit:cover}
+.cover-card .ph{font-size:64px;color:var(--txt-faint)}
+.vinyl{position:relative;width:min(210px,26vh);aspect-ratio:1;flex:none}
+.vinyl .disc{
+  position:absolute;inset:0;border-radius:50%;
+  background:
+    repeating-radial-gradient(circle at 50% 50%, rgba(255,255,255,.04) 0 2px, transparent 2px 6px),
+    radial-gradient(circle at 50% 50%, #0e2b4d 0%, #0a1c33 70%, #07131f 100%);
+  border:1px solid var(--stroke-strong);
+  box-shadow:0 18px 50px rgba(0,0,0,.55), 0 0 0 8px rgba(140,200,255,.05);
+  animation:spin 20s linear infinite;
+}
+.vinyl.paused .disc{animation-play-state:paused}
+@keyframes spin{to{transform:rotate(360deg)}}
+.vinyl .cover{
+  position:absolute;inset:26%;border-radius:50%;overflow:hidden;
+  background:linear-gradient(135deg,#123c6b,#0b2038);border:2px solid rgba(160,215,255,.35);
+  display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 6px rgba(0,0,0,.35);
+}
+.vinyl .cover img{width:100%;height:100%;object-fit:cover}
+.vinyl .cover .ph{color:var(--txt-faint);font-size:12px;text-align:center;padding:8px}
+.vinyl .hole{position:absolute;inset:47.5%;border-radius:50%;background:#07131f;border:2px solid rgba(160,215,255,.5);z-index:2}
+
+/* ==================================================================
+   磁带模式 —— 只在竖屏出现（横屏仍是 转盘 ↔ 封面 切换）
+   ---------------------------------------------------------------
+   竖屏窗口窄且高，圆形转盘与方形封面都在跟歌词抢竖向空间；
+   磁带是横宽的东西，压扁到一条正好填住"顶部那条横带"。
+   结构：壳体正面贴一张纸标（封面），中间挖窗露两个盘，下沿一条标签印歌名。
+   颜色全部走 var(--*)，7 套皮肤自动成立，不用各自再写一遍。
+   ================================================================== */
+.cassette{display:none}
+/* 壳体：磁带正面就是一块塑料板，封面是贴在板上的纸标，不是浮在外面的卡片 */
+.tape-shell{
+  position:relative; width:100%; aspect-ratio:1.66; border-radius:11px; overflow:hidden;
+  background:linear-gradient(160deg, rgba(255,255,255,.24), rgba(255,255,255,.05) 42%, rgba(0,0,0,.26)), var(--glass);
+  border:1px solid var(--stroke-strong);
+  box-shadow:0 20px 44px rgba(0,0,0,.46), inset 0 1px 0 rgba(255,255,255,.34), inset 0 -3px 8px rgba(0,0,0,.28);
+}
+/* 贴纸：贴在壳体正面上，四周留一圈塑料边 */
+.tape-face{
+  position:absolute; inset:5.2% 4.6%;
+  border-radius:4px; overflow:hidden;
+  display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(135deg, var(--glass-strong), var(--glass));
+  border:1px solid var(--stroke);
+  color:var(--txt-faint); font-size:22px;
+}
+.tape-face img{width:100%; height:100%; object-fit:cover; object-position:center 34%; display:block}
+/* 贴在塑料壳下面的那道斜向反光 */
+.tape-face::after{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(104deg,
+    rgba(255,255,255,.30) 0 15%, rgba(255,255,255,.05) 26%,
+    transparent 40% 74%, rgba(255,255,255,.09) 88% 100%);
+}
+/* 窗口：从贴纸中间挖出来的孔，露出里头的两个盘 */
+.tape-window{
+  position:absolute; left:23.5%; right:23.5%; top:26.5%; height:32%;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 8%; border-radius:4px; overflow:hidden;
+  /* 窗口是"挖进去的孔"，里头是黑的：不能半透，否则封面亮的地方会透上来，看着像贴了块玻璃 */
+  background:
+    radial-gradient(130% 96% at 50% -6%, rgba(255,255,255,.12), transparent 58%),
+    linear-gradient(180deg, rgba(0,0,0,.80), rgba(0,0,0,.90));
+  border:1px solid rgba(0,0,0,.55);
+  box-shadow:inset 0 3px 10px rgba(0,0,0,.85), inset 0 -1px 0 rgba(255,255,255,.14), 0 0 0 1px rgba(255,255,255,.14);
+}
+.tape-band{
+  position:absolute; left:9%; right:9%; top:66%; height:5%;
+  background:linear-gradient(180deg, #5a4028, #2f2013);
+  box-shadow:0 1px 0 rgba(255,255,255,.12);
+}
+.reel{
+  position:relative; width:34%; aspect-ratio:1; border-radius:50%;
+  /* 外圈是卷起来的带子（深棕），中间才是转动的轮毂 */
+  background:
+    radial-gradient(circle at 50% 34%, rgba(255,255,255,.14), transparent 62%),
+    radial-gradient(circle at 50% 50%, #4a3421 0 100%);
+  box-shadow:inset 0 0 9px rgba(0,0,0,.75), 0 0 0 1px rgba(0,0,0,.55);
+  animation:spin 4.4s linear infinite;
+}
+.reel::before{
+  content:""; position:absolute; inset:21%; border-radius:50%;
+  /* 轮毂：6 根辐条 + 中心孔，跟着转 */
+  background:
+    repeating-conic-gradient(from 0deg, rgba(226,236,250,.80) 0 11deg, rgba(118,136,160,.20) 11deg 60deg),
+    radial-gradient(circle at 50% 50%, #1b2027 0 34%, #93a1b3 35% 100%);
+  box-shadow:inset 0 0 6px rgba(0,0,0,.55);
+}
+.reel::after{
+  content:""; position:absolute; inset:43%; border-radius:50%;
+  background:#0a0d12; box-shadow:inset 0 0 4px #000, 0 0 0 1px rgba(255,255,255,.18);
+}
+/* 标签：印在贴纸下沿，跟着封面走，不另起一块白底 */
+.tape-label{
+  position:absolute; left:9%; right:9%; bottom:9%; height:15.5%;
+  display:flex; align-items:center; gap:8px; padding:0 9px;
+  border-radius:3px; overflow:hidden;
+  background:rgba(6,8,12,.56);
+  backdrop-filter:blur(6px) saturate(1.15); -webkit-backdrop-filter:blur(6px) saturate(1.15);
+  border:1px solid rgba(255,255,255,.18);
+  box-shadow:0 1px 0 rgba(255,255,255,.10) inset;
+}
+.tape-label .side{font-size:9.5px; font-weight:800; letter-spacing:.14em; color:rgba(255,255,255,.60); flex:none}
+.tape-label .ttl{
+  flex:1; min-width:0; text-align:right; font-size:10.5px; letter-spacing:.05em; color:rgba(255,255,255,.88);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.cassette.paused .reel{animation-play-state:paused}
+
+/* 歌曲信息 + 控制 */
+.now{text-align:center;max-width:94%}
+.now .title{font-size:19px;font-weight:700;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.now .artist{font-size:14px;color:var(--txt-dim);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.controls{display:flex;align-items:center;gap:16px}
+.ctrl{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:var(--glass-strong);border:1px solid var(--stroke);transition:.15s;font-size:18px}
+.ctrl:hover{border-color:var(--accent);box-shadow:0 0 14px var(--glow)}
+.ctrl.play{width:60px;height:60px;background:linear-gradient(135deg,var(--accent),var(--accent-3));color:#04203a;font-size:24px;
+  box-shadow:0 8px 26px var(--glow-soft)}
+.ctrl.play:hover{box-shadow:0 12px 34px var(--glow-soft)}
+.ctrl.karaoke-on{border-color:var(--accent-3);color:var(--accent-3);box-shadow:0 0 16px var(--glow-soft);background:rgba(53,224,255,.14)}
+.ctrl.mode-on{border-color:var(--accent);color:var(--accent);box-shadow:0 0 16px var(--glow-soft)}
+.progress{width:100%;max-width:94%;margin-top:0}
+.times{display:flex;justify-content:space-between;font-size:12px;color:var(--txt-faint);margin-bottom:7px}
+.bar{position:relative;height:6px;border-radius:3px;background:rgba(150,200,255,.16);cursor:pointer;touch-action:none}
+/* 条本身只有 6px 高，手指根本点不准：上下各加 15px 透明命中区（不吃视觉高度） */
+.bar::before{content:"";position:absolute;left:0;right:0;top:-9px;bottom:-9px}
+.bar .fill{position:absolute;left:0;top:0;height:100%;border-radius:3px;
+  background:linear-gradient(90deg,var(--accent),var(--accent-3));box-shadow:0 0 10px var(--glow-soft)}
+.bar .knob{position:absolute;top:50%;width:14px;height:14px;border-radius:50%;background:#fff;transform:translate(-50%,-50%);
+  box-shadow:0 0 8px rgba(0,0,0,.6);opacity:0;transition:.15s}
+.bar:hover .knob{opacity:1}
+
+/* 曲库 */
+#library{flex:1;display:none;flex-direction:column;padding:18px 22px;min-width:0;gap:14px}
+.lib-tabs{display:flex;gap:8px}
+.lib-tabs .tab{padding:8px 16px}
+.list-wrap{flex:1;overflow-y:auto;border-radius:16px;background:var(--glass);border:1px solid var(--stroke);backdrop-filter:blur(14px);padding:8px}
+.row{display:flex;align-items:center;gap:14px;padding:10px 14px;border-radius:12px;cursor:pointer;transition:.12s}
+.row:hover{background:var(--glass-strong)}
+.row .idx{width:30px;text-align:center;color:var(--txt-faint);font-size:14px;flex:none}
+.row .cov{width:44px;height:44px;border-radius:8px;flex:none;background:linear-gradient(135deg,#123c6b,#0b2038);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--txt-faint);font-size:16px}
+.row .cov img{width:100%;height:100%;object-fit:cover}
+.row .meta{flex:1;min-width:0}
+.row .meta .t{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .meta .s{font-size:13px;color:var(--txt-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.row .dur{font-size:13px;color:var(--txt-faint);flex:none}
+.row.playing .meta .t{color:var(--accent-3)}
+.row .eq{color:var(--accent-3);font-size:13px}
+.empty{padding:50px;text-align:center;color:var(--txt-faint);font-size:14px}
+.loading{color:var(--txt-faint);font-size:14px;padding:20px;text-align:center}
+
+/* 歌单平铺 */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;padding:6px}
+.card{border-radius:14px;overflow:hidden;cursor:pointer;background:var(--glass);border:1px solid var(--stroke);transition:.15s}
+.card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.card .cover{aspect-ratio:1;background:linear-gradient(135deg,#123c6b,#0b2038);display:flex;align-items:center;justify-content:center;color:var(--txt-faint)}
+.card .cover img{width:100%;height:100%;object-fit:cover}
+.card .name{padding:10px 12px 12px;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .sub{padding:0 12px 12px;font-size:12px;color:var(--txt-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* toast */
+#toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%) translateY(20px);opacity:0;
+  background:rgba(10,25,45,.92);border:1px solid var(--stroke);border-radius:12px;padding:11px 20px;font-size:14px;
+  transition:.3s;z-index:99;pointer-events:none;max-width:80vw}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* 竖屏底部全是控件（进度条 8%、音量条 2.2%），提示条会压在上面，改挂顶栏下面 */
+@media (max-aspect-ratio:1/1){
+  #toast{bottom:auto; top:calc(58px + 12px); transform:translateX(-50%) translateY(-16px)}
+  #toast.show{transform:translateX(-50%) translateY(0)}
+}
+@media (max-width:900px){
+  #player{flex-direction:column;overflow-y:auto}
+  .col-lyric,.col-player{flex:none}
+}
+
+/* ==================================================================
+   v1.3.0 外观皮肤
+   ---------------------------------------------------------------
+   与上方 theme-* 是两个维度：
+     theme-*  只换配色（深蓝 / 暗紫 / 翠绿）
+     skin-*   换整套视觉语言（材质 / 圆角 / 阴影 / 排版 / 有无波形）
+   每种 skin 严格只实现一种设计语言，不混搭：
+     玻璃拟态与粗野主义在设计上本来就互斥，混用必变脏。
+   所有规则一律带 body.skin-* 前缀，保证皮肤之间零串扰。
+   ================================================================== */
+
+/* 通用：隐藏波形（新拟物 / 瑞士极简这类留白型皮肤用） */
+body.no-viz .viz-row{display:none}
+body.no-viz .player-box{flex:1}
+/* 波形腾出的空间给封面，免得下方一大片空白 */
+body.no-viz .vinyl,body.no-viz .cover-card{width:min(252px,32vh)}
+
+/* ---------------------------------------------------------------
+   ① 透明玻璃 —— Glassmorphism / 苹果 Liquid Glass（深色）
+   彩色极光底 + 强毛玻璃 + 1px 白边 + 顶部高光内阴影
+   参数取业界共识：bg rgba(255,255,255,.06~.10)
+                  blur 24~30px + saturate(180%)
+                  border rgba(255,255,255,.18)
+   --------------------------------------------------------------- */
+body.skin-glass{
+  --bg-0:#080a1a; --bg-1:#0d0a24; --bg-2:#060d1c;
+  --glass:rgba(255,255,255,.07); --glass-strong:rgba(255,255,255,.13);
+  --stroke:rgba(255,255,255,.16); --stroke-strong:rgba(255,255,255,.30);
+  --txt:#ffffff; --txt-dim:rgba(255,255,255,.72); --txt-faint:rgba(255,255,255,.56);
+  --accent:#8ab4ff; --accent-2:#cfe4ff; --accent-3:#a9d8ff;
+  --glow:rgba(160,200,255,.30); --glow-soft:rgba(200,225,255,.45);
+  --bg-glow-1:transparent; --bg-glow-2:transparent;
+  --viz-bg-top:rgba(255,255,255,.05); --viz-bg-bottom:rgba(255,255,255,.03);
+  --input-bg:rgba(255,255,255,.08);
+  --danger:#ff7a90;
+  /* —— 极光色 —— 四团光各自的 RGB，由外观面板的「色调」滑杆整体旋转色相
+     （JS 直接写行内变量，默认值就是原配色，不动滑杆时和以前完全一致） */
+  --g1:120,92,255; --g2:0,182,255; --g3:178,92,205; --g4:30,190,170;
+  /* 高光三件套：唱片反光 / 当前歌词辉光 / 播放中行辉光（也跟着色调转） */
+  --gv-1:170,150,255; --gv-2:180,210,255; --gv-3:200,225,255;
+  background-color:#070a16;
+  background-image:
+    /* 冷调极光：紫 / 青 / 淡玫 / 青绿，去掉原来的高饱和洋红，避免像游戏界面 */
+    radial-gradient(900px 720px at 8% -4%, rgba(var(--g1),.58), transparent 60%),
+    radial-gradient(780px 640px at 97% 2%, rgba(var(--g2),.44), transparent 58%),
+    radial-gradient(900px 760px at 86% 104%, rgba(var(--g3),.26), transparent 62%),
+    radial-gradient(720px 580px at 16% 98%, rgba(var(--g4),.24), transparent 62%),
+    linear-gradient(160deg,#080b1c,#0d0b26 52%,#05101c);
+}
+body.skin-glass::before{display:none}
+body.skin-glass .login-card{
+  background:rgba(255,255,255,.10); backdrop-filter:blur(30px) saturate(180%);
+  -webkit-backdrop-filter:blur(30px) saturate(180%);
+  border:1px solid rgba(255,255,255,.22); border-radius:28px;
+  box-shadow:0 28px 80px rgba(0,0,0,.46), inset 0 1px 0 rgba(255,255,255,.34);
+}
+body.skin-glass .logo .disc{
+  background:conic-gradient(from 220deg,rgba(255,255,255,.5),rgba(160,120,255,.6),rgba(0,200,255,.5),rgba(255,255,255,.5));
+  border:1px solid rgba(255,255,255,.35); box-shadow:0 6px 20px rgba(160,140,255,.44);
+}
+body.skin-glass .logo .disc::after{background:#fff; box-shadow:0 0 14px rgba(255,255,255,.9)}
+body.skin-glass .field input{
+  background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.18);
+  border-radius:14px; backdrop-filter:blur(12px);
+}
+body.skin-glass .field input:focus{
+  border-color:rgba(255,255,255,.46); box-shadow:0 0 0 4px rgba(255,255,255,.10);
+}
+body.skin-glass .btn-login{
+  /* 主按钮用“实心白玻璃 + 深色字”：半透明底 + 白字对比不足，第一屏会显得没重点 */
+  background:rgba(255,255,255,.93); color:#14102a; border-radius:14px;
+  border:1px solid rgba(255,255,255,.9); backdrop-filter:blur(16px) saturate(180%);
+  box-shadow:0 12px 34px rgba(18,14,48,.45), inset 0 1px 0 #fff;
+}
+body.skin-glass .btn-login:hover{background:#fff; box-shadow:0 16px 40px rgba(18,14,48,.55), inset 0 1px 0 #fff}
+body.skin-glass header{
+  background:rgba(255,255,255,.06); backdrop-filter:blur(28px) saturate(180%);
+  -webkit-backdrop-filter:blur(28px) saturate(180%);
+  border-bottom:1px solid rgba(255,255,255,.14);
+  box-shadow:inset 0 -1px 0 rgba(255,255,255,.06);
+}
+body.skin-glass header .brand .dot{background:#fff; box-shadow:0 0 14px rgba(255,255,255,.9)}
+body.skin-glass .tab{border-radius:12px}
+body.skin-glass .tab.active{
+  background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.26); color:#fff;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.3);
+}
+body.skin-glass .searchbox input{
+  background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.20); border-radius:13px;
+}
+body.skin-glass .searchbox input:focus{border-color:rgba(255,255,255,.46); background:rgba(255,255,255,.14)}
+body.skin-glass .btn-theme,body.skin-glass .btn-logout{
+  background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.16); border-radius:12px;
+}
+body.skin-glass .btn-theme:hover{box-shadow:0 0 16px rgba(255,255,255,.22)}
+body.skin-glass .user-chip .avatar{
+  background:rgba(255,255,255,.24); color:#fff; border:1px solid rgba(255,255,255,.3);
+}
+body.skin-glass .panel,body.skin-glass .player-box,body.skin-glass .list-wrap{
+  background:rgba(255,255,255,.07); backdrop-filter:blur(30px) saturate(180%);
+  -webkit-backdrop-filter:blur(30px) saturate(180%);
+  border:1px solid rgba(255,255,255,.18); border-radius:28px;
+  box-shadow:0 18px 50px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.26);
+}
+body.skin-glass .viz-row{
+  /* 媒体层压暗：对应 Liquid Glass 在亮背景后加 35% 暗化层的做法，波形才立得住 */
+  background:rgba(9,11,26,.42); backdrop-filter:blur(30px) saturate(180%);
+  border:1px solid rgba(255,255,255,.16); border-radius:28px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.22);
+}
+body.skin-glass .wave-tag{color:rgba(255,255,255,.50)}
+body.skin-glass .lyric-centerline{background:linear-gradient(90deg,transparent,rgba(255,255,255,.30),transparent)}
+body.skin-glass .lyric-line{color:rgba(255,255,255,.44)}
+body.skin-glass .lyric-line.active{color:#fff; text-shadow:0 0 30px rgba(var(--gv-2),.9)}
+body.skin-glass .lyric-tools button,body.skin-glass .view-switch{
+  background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.20); border-radius:12px;
+  backdrop-filter:blur(14px);
+}
+body.skin-glass .lyric-tools button:hover,body.skin-glass .view-switch:hover{
+  border-color:rgba(255,255,255,.44); box-shadow:0 0 16px rgba(255,255,255,.20);
+}
+body.skin-glass .vinyl .disc{
+  background:
+    repeating-radial-gradient(circle at 50% 50%, rgba(255,255,255,.055) 0 2px, transparent 2px 7px),
+    radial-gradient(circle at 34% 26%, rgba(var(--gv-1),.42), transparent 58%),
+    radial-gradient(circle at 50% 50%, rgba(28,24,58,.88) 0%, rgba(11,9,26,.95) 74%);
+  border:1px solid rgba(255,255,255,.28);
+  box-shadow:0 22px 60px rgba(0,0,0,.58), 0 0 0 8px rgba(255,255,255,.05),
+             inset 0 1px 0 rgba(255,255,255,.30);
+}
+body.skin-glass .vinyl .cover{
+  border:2px solid rgba(255,255,255,.40); box-shadow:0 0 0 6px rgba(0,0,0,.30);
+}
+body.skin-glass .vinyl .hole{background:rgba(10,8,24,.9); border:2px solid rgba(255,255,255,.55)}
+body.skin-glass .cover-card{
+  background:rgba(255,255,255,.09); border:1px solid rgba(255,255,255,.24); border-radius:24px;
+  box-shadow:0 22px 60px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.3);
+  backdrop-filter:blur(24px) saturate(180%);
+}
+body.skin-glass .ctrl{
+  background:rgba(255,255,255,.11); border:1px solid rgba(255,255,255,.22);
+  backdrop-filter:blur(18px) saturate(180%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.3), 0 6px 18px rgba(0,0,0,.24);
+}
+body.skin-glass .ctrl:hover{border-color:rgba(255,255,255,.44); box-shadow:0 0 20px rgba(255,255,255,.22), inset 0 1px 0 rgba(255,255,255,.4)}
+body.skin-glass .ctrl.play{
+  background:rgba(255,255,255,.26); color:#fff; border:1px solid rgba(255,255,255,.44);
+  backdrop-filter:blur(22px) saturate(200%);
+  box-shadow:0 12px 34px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.56);
+}
+body.skin-glass .ctrl.play:hover{box-shadow:0 16px 42px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.7)}
+body.skin-glass .ctrl.karaoke-on{background:rgba(255,255,255,.22); color:#fff; border-color:rgba(255,255,255,.5)}
+body.skin-glass .ctrl.mode-on{color:#fff; border-color:rgba(255,255,255,.5)}
+body.skin-glass .bar,body.skin-glass .vol-bar{background:rgba(255,255,255,.16)}
+body.skin-glass .bar .fill,body.skin-glass .vol-bar .fill{
+  background:linear-gradient(90deg,rgba(255,255,255,.86),rgba(190,220,255,.96));
+  box-shadow:0 0 14px rgba(255,255,255,.5);
+}
+body.skin-glass .bar .knob,body.skin-glass .vol-bar .knob{background:#fff; box-shadow:0 2px 10px rgba(0,0,0,.4)}
+body.skin-glass .row:hover{background:rgba(255,255,255,.10)}
+body.skin-glass .row .cov,body.skin-glass .card .cover{background:rgba(255,255,255,.10)}
+body.skin-glass .row.playing .meta .t{color:#fff; text-shadow:0 0 16px rgba(var(--gv-3),.8)}
+body.skin-glass .card{
+  background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.16); border-radius:20px;
+  backdrop-filter:blur(24px) saturate(180%);
+}
+body.skin-glass .card:hover{border-color:rgba(255,255,255,.42)}
+body.skin-glass #toast{
+  background:rgba(255,255,255,.14); color:#fff; border:1px solid rgba(255,255,255,.26);
+  border-radius:16px; backdrop-filter:blur(24px) saturate(180%);
+  box-shadow:0 12px 36px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.34);
+}
+body.skin-glass ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.24)}
+
+/* ---------------------------------------------------------------
+   ③ 新拟物 —— Neumorphism
+   同色底 + 双向柔和阴影（亮在上左、暗在下右），靠凸起/凹陷表达层级
+   无边框、无发光；代价是对比度天然偏低，文字压到最深一档补偿
+   --------------------------------------------------------------- */
+body.skin-neumorph{
+  --bg-0:#e3e8ef; --bg-1:#e3e8ef; --bg-2:#e3e8ef;
+  --glass:#e3e8ef; --glass-strong:#e3e8ef;
+  --stroke:transparent; --stroke-strong:rgba(0,0,0,.04);
+  --txt:#2d3748; --txt-dim:#5a6577; --txt-faint:#8b95a5;
+  --accent:#5b7cfa; --accent-2:#5b7cfa; --accent-3:#7c93ff;
+  --glow:transparent; --glow-soft:transparent;
+  --bg-glow-1:transparent; --bg-glow-2:transparent;
+  --viz-bg-top:#e3e8ef; --viz-bg-bottom:#e3e8ef;
+  --input-bg:#e3e8ef;
+  --danger:#e05a6b;
+  background-color:#e3e8ef; background-image:none;
+}
+body.skin-neumorph::before{display:none}
+body.skin-neumorph .login-card{
+  background:#e3e8ef; border:none; border-radius:28px;
+  box-shadow:12px 12px 28px #c2c9d4, -12px -12px 28px #ffffff;
+}
+body.skin-neumorph .logo .disc{
+  background:conic-gradient(from 0deg,#c2c9d4,#ffffff,#c2c9d4,#b9c1cd,#c2c9d4);
+  border:none; box-shadow:5px 5px 12px #c2c9d4, -5px -5px 12px #ffffff;
+}
+body.skin-neumorph .logo .disc::after{background:#5b7cfa; box-shadow:none}
+body.skin-neumorph .logo h1{color:#2d3748}
+body.skin-neumorph .field input{
+  background:#e3e8ef; border:none; border-radius:14px;
+  box-shadow:inset 5px 5px 11px #c2c9d4, inset -5px -5px 11px #ffffff;
+}
+body.skin-neumorph .field input:focus{
+  box-shadow:inset 5px 5px 11px #c2c9d4, inset -5px -5px 11px #ffffff, 0 0 0 3px rgba(91,124,250,.22);
+}
+body.skin-neumorph .btn-login{
+  background:#e3e8ef; color:#3b5bdb; border:none; border-radius:14px;
+  box-shadow:7px 7px 16px #c2c9d4, -7px -7px 16px #ffffff; font-weight:700;
+}
+body.skin-neumorph .btn-login:hover{transform:none; box-shadow:4px 4px 10px #c2c9d4, -4px -4px 10px #ffffff}
+body.skin-neumorph .btn-login:active{box-shadow:inset 5px 5px 11px #c2c9d4, inset -5px -5px 11px #ffffff}
+body.skin-neumorph header{
+  background:#e3e8ef; backdrop-filter:none; border-bottom:none;
+  box-shadow:0 6px 16px rgba(194,201,212,.6);
+}
+body.skin-neumorph header .brand .dot{background:#5b7cfa; box-shadow:none}
+body.skin-neumorph .tab{color:#5a6577; border-radius:12px}
+body.skin-neumorph .tab.active{
+  background:#e3e8ef; border:none; color:#3b5bdb;
+  box-shadow:inset 4px 4px 9px #c2c9d4, inset -4px -4px 9px #ffffff;
+}
+body.skin-neumorph .searchbox input{
+  background:#e3e8ef; border:none; border-radius:12px;
+  box-shadow:inset 4px 4px 9px #c2c9d4, inset -4px -4px 9px #ffffff;
+}
+body.skin-neumorph .searchbox input:focus{border:none; box-shadow:inset 4px 4px 9px #c2c9d4, inset -4px -4px 9px #fff, 0 0 0 3px rgba(91,124,250,.2)}
+body.skin-neumorph .btn-theme,body.skin-neumorph .btn-logout{
+  background:#e3e8ef; border:none; border-radius:11px;
+  box-shadow:4px 4px 10px #c2c9d4, -4px -4px 10px #ffffff;
+}
+body.skin-neumorph .btn-theme:hover{box-shadow:2px 2px 6px #c2c9d4, -2px -2px 6px #fff; color:#3b5bdb}
+body.skin-neumorph .btn-logout:hover{background:#e3e8ef; color:#e05a6b; border:none; box-shadow:inset 4px 4px 9px #c2c9d4, inset -4px -4px 9px #fff}
+body.skin-neumorph .user-chip .avatar{
+  background:#e3e8ef; color:#3b5bdb;
+  box-shadow:3px 3px 8px #c2c9d4, -3px -3px 8px #ffffff;
+}
+body.skin-neumorph .panel,body.skin-neumorph .player-box{
+  background:#e3e8ef; border:none; border-radius:26px; backdrop-filter:none;
+  box-shadow:10px 10px 24px #c2c9d4, -10px -10px 24px #ffffff;
+}
+body.skin-neumorph .viz-row{
+  background:#e3e8ef; border:none; border-radius:26px; backdrop-filter:none;
+  box-shadow:inset 6px 6px 14px #c2c9d4, inset -6px -6px 14px #ffffff;
+}
+body.skin-neumorph .wave-tag{color:#8b95a5}
+body.skin-neumorph .lyric-centerline{background:linear-gradient(90deg,transparent,rgba(91,124,250,.28),transparent)}
+body.skin-neumorph .lyric-line{color:#8b95a5}
+body.skin-neumorph .lyric-line.active{color:#2d3748; text-shadow:none; font-weight:700}
+body.skin-neumorph .lyric-tools button,body.skin-neumorph .view-switch{
+  background:#e3e8ef; border:none; border-radius:10px;
+  box-shadow:4px 4px 10px #c2c9d4, -4px -4px 10px #ffffff; color:#5a6577;
+}
+body.skin-neumorph .lyric-tools button:hover,body.skin-neumorph .view-switch:hover{
+  box-shadow:2px 2px 6px #c2c9d4, -2px -2px 6px #fff; border:none; color:#3b5bdb;
+}
+body.skin-neumorph .vinyl .disc{
+  background:
+    repeating-radial-gradient(circle at 50% 50%, rgba(0,0,0,.035) 0 2px, transparent 2px 6px),
+    radial-gradient(circle at 50% 50%, #eef1f6 0%, #d6dce5 72%, #c2c9d4 100%);
+  border:none;
+  box-shadow:12px 12px 30px #c2c9d4, -12px -12px 30px #ffffff;
+}
+body.skin-neumorph .vinyl .cover{
+  border:2px solid #eef1f6; box-shadow:inset 2px 2px 6px #c2c9d4, inset -2px -2px 6px #fff;
+}
+body.skin-neumorph .vinyl .hole{background:#c2c9d4; border:2px solid #eef1f6}
+body.skin-neumorph .cover-card{
+  background:#e3e8ef; border:none; border-radius:24px;
+  box-shadow:10px 10px 24px #c2c9d4, -10px -10px 24px #ffffff;
+}
+body.skin-neumorph .ctrl{
+  background:#e3e8ef; border:none;
+  box-shadow:5px 5px 12px #c2c9d4, -5px -5px 12px #ffffff; color:#5a6577;
+}
+body.skin-neumorph .ctrl:hover{box-shadow:3px 3px 8px #c2c9d4, -3px -3px 8px #fff; border:none; color:#3b5bdb}
+body.skin-neumorph .ctrl:active{box-shadow:inset 4px 4px 9px #c2c9d4, inset -4px -4px 9px #fff}
+body.skin-neumorph .ctrl.play{
+  background:#e3e8ef; color:#3b5bdb;
+  box-shadow:6px 6px 14px #c2c9d4, -6px -6px 14px #ffffff;
+}
+body.skin-neumorph .ctrl.play:hover{box-shadow:8px 8px 18px #c2c9d4, -8px -8px 18px #fff}
+body.skin-neumorph .ctrl.karaoke-on,body.skin-neumorph .ctrl.mode-on{
+  background:#e3e8ef; color:#3b5bdb; border:none;
+  box-shadow:inset 4px 4px 9px #c2c9d4, inset -4px -4px 9px #fff;
+}
+body.skin-neumorph .bar,body.skin-neumorph .vol-bar{
+  background:#e3e8ef;
+  box-shadow:inset 2px 2px 5px #c2c9d4, inset -2px -2px 5px #ffffff;
+}
+body.skin-neumorph .bar .fill,body.skin-neumorph .vol-bar .fill{
+  background:#5b7cfa; box-shadow:none;
+}
+body.skin-neumorph .bar .knob,body.skin-neumorph .vol-bar .knob{
+  background:#eef1f6; box-shadow:2px 2px 5px #c2c9d4, -2px -2px 5px #fff;
+}
+body.skin-neumorph .list-wrap{
+  background:#e3e8ef; border:none; border-radius:22px;
+  box-shadow:inset 6px 6px 14px #c2c9d4, inset -6px -6px 14px #ffffff;
+}
+body.skin-neumorph .row:hover{background:#e3e8ef; box-shadow:4px 4px 10px #c2c9d4, -4px -4px 10px #fff}
+body.skin-neumorph .row .cov{border-radius:10px; background:#e3e8ef; box-shadow:3px 3px 7px #c2c9d4, -3px -3px 7px #fff; color:#8b95a5}
+body.skin-neumorph .row.playing .meta .t{color:#3b5bdb}
+body.skin-neumorph .card{
+  background:#e3e8ef; border:none; border-radius:18px;
+  box-shadow:7px 7px 16px #c2c9d4, -7px -7px 16px #ffffff;
+}
+body.skin-neumorph .card:hover{border:none; transform:translateY(-2px); box-shadow:9px 9px 20px #c2c9d4, -9px -9px 20px #fff}
+body.skin-neumorph .card .cover{background:#e3e8ef}
+body.skin-neumorph #toast{
+  background:#e3e8ef; color:#2d3748; border:none; border-radius:14px;
+  box-shadow:8px 8px 20px #c2c9d4, -8px -8px 20px #ffffff;
+}
+body.skin-neumorph ::-webkit-scrollbar-thumb{background:#c2c9d4; border-radius:4px}
+
+/* ---------------------------------------------------------------
+   ④ 新粗野 —— Neo-Brutalism
+   硬边（2~4px 纯黑）+ 零模糊错位投影 + 平涂高饱和色 + ≤8px 圆角
+   铁律：阴影第四位 blur 必须是 0；不能有渐变/透明/大圆角
+   --------------------------------------------------------------- */
+body.skin-brutal{
+  --bg-0:#fdf6e3; --bg-1:#fdf6e3; --bg-2:#fdf6e3;
+  --glass:#ffffff; --glass-strong:#ffe066;
+  --stroke:#0a0a0a; --stroke-strong:#0a0a0a;
+  --txt:#0a0a0a; --txt-dim:#3d3d3d; --txt-faint:#6b6b6b;
+  --accent:#0a0a0a; --accent-2:#0a0a0a; --accent-3:#0a0a0a;
+  --glow:transparent; --glow-soft:transparent;
+  --bg-glow-1:transparent; --bg-glow-2:transparent;
+  --viz-bg-top:#ffffff; --viz-bg-bottom:#ffffff;
+  --input-bg:#ffffff;
+  --danger:#e03131;
+  background-color:#fdf6e3; background-image:none;
+  font-weight:500;
+}
+body.skin-brutal::before{display:none}
+body.skin-brutal .login-card{
+  background:#fff; backdrop-filter:none; border:4px solid #0a0a0a; border-radius:8px;
+  box-shadow:10px 10px 0 #0a0a0a;
+}
+body.skin-brutal .logo .disc{
+  background:#ffe066; border:3px solid #0a0a0a; border-radius:50%;
+  box-shadow:3px 3px 0 #0a0a0a;
+}
+body.skin-brutal .logo .disc::after{background:#0a0a0a; box-shadow:none}
+body.skin-brutal .logo h1{font-weight:900; letter-spacing:0; text-transform:uppercase}
+body.skin-brutal .logo h1 small{font-weight:700; color:#0a0a0a; letter-spacing:1px}
+body.skin-brutal .field label{font-weight:800; color:#0a0a0a; text-transform:uppercase; letter-spacing:.5px}
+body.skin-brutal .field input{
+  background:#fff; border:3px solid #0a0a0a; border-radius:6px; font-weight:600;
+  box-shadow:4px 4px 0 #0a0a0a;
+}
+body.skin-brutal .field input:focus{
+  border-color:#0a0a0a; box-shadow:4px 4px 0 #8b5cf6; outline:none;
+}
+body.skin-brutal .btn-login{
+  background:#ffe066; color:#0a0a0a; border:3px solid #0a0a0a; border-radius:6px;
+  box-shadow:6px 6px 0 #0a0a0a; font-weight:900; text-transform:uppercase; letter-spacing:1px;
+  transition:transform .12s, box-shadow .12s;
+}
+body.skin-brutal .btn-login:hover{transform:translate(-2px,-2px); box-shadow:8px 8px 0 #0a0a0a}
+body.skin-brutal .btn-login:active{transform:translate(2px,2px); box-shadow:2px 2px 0 #0a0a0a}
+body.skin-brutal .login-tip{color:#3d3d3d; font-weight:600}
+body.skin-brutal header{
+  background:#fff; backdrop-filter:none; border-bottom:4px solid #0a0a0a; height:62px;
+}
+body.skin-brutal header .brand{font-weight:900; text-transform:uppercase; letter-spacing:.5px}
+body.skin-brutal header .brand .dot{background:#0a0a0a; border-radius:0; box-shadow:none}
+body.skin-brutal .tab{
+  border-radius:6px; color:#0a0a0a; font-weight:700; border:2px solid transparent;
+}
+body.skin-brutal .tab.active{
+  background:#ffe066; border:2px solid #0a0a0a; color:#0a0a0a;
+  box-shadow:3px 3px 0 #0a0a0a;
+}
+body.skin-brutal .searchbox input{
+  background:#fff; border:3px solid #0a0a0a; border-radius:6px; font-weight:600;
+  box-shadow:3px 3px 0 #0a0a0a;
+}
+body.skin-brutal .searchbox input:focus{border-color:#0a0a0a; box-shadow:3px 3px 0 #8b5cf6}
+body.skin-brutal .btn-theme,body.skin-brutal .btn-logout{
+  background:#fff; border:3px solid #0a0a0a; border-radius:6px;
+  box-shadow:3px 3px 0 #0a0a0a; color:#0a0a0a; font-weight:700;
+  transition:transform .12s, box-shadow .12s;
+}
+body.skin-brutal .btn-theme:hover{
+  box-shadow:5px 5px 0 #0a0a0a; transform:translate(-2px,-2px); border-color:#0a0a0a; color:#0a0a0a;
+}
+body.skin-brutal .btn-logout:hover{background:#ffc9c9; color:#0a0a0a; border-color:#0a0a0a; box-shadow:5px 5px 0 #0a0a0a; transform:translate(-2px,-2px)}
+body.skin-brutal .user-chip{font-weight:700}
+body.skin-brutal .user-chip .avatar{
+  background:#a7f3d0; color:#0a0a0a; border:2px solid #0a0a0a; border-radius:6px;
+  box-shadow:2px 2px 0 #0a0a0a;
+}
+body.skin-brutal #player{gap:20px; padding:20px 24px}
+body.skin-brutal .panel,body.skin-brutal .player-box{
+  background:#fff; backdrop-filter:none; border:3px solid #0a0a0a; border-radius:8px;
+  box-shadow:7px 7px 0 #0a0a0a;
+}
+body.skin-brutal .viz-row{
+  background:#fff; backdrop-filter:none; border:3px solid #0a0a0a; border-radius:8px;
+  box-shadow:7px 7px 0 #0a0a0a;
+}
+body.skin-brutal .wave-tag{
+  color:#0a0a0a; font-weight:900; letter-spacing:1px;
+  background:#a7f3d0; padding:0 6px;
+}
+body.skin-brutal #lyricPanel .wave-tag{background:#a7f3d0; margin:12px 0 0 14px; display:inline-block}
+body.skin-brutal .lyric-centerline{background:none; border-top:2px dashed #0a0a0a; height:0}
+body.skin-brutal .lyric-line{color:#6b6b6b; border-radius:4px; font-weight:600}
+body.skin-brutal .lyric-line.active{
+  color:#0a0a0a; font-weight:900; text-shadow:none;
+  /* 马克笔式半透明高亮：只涂下半行，不糊字也不占满整块 */
+  background:linear-gradient(transparent 60%, #ffe066 60%);
+}
+body.skin-brutal .lyric-tools button,body.skin-brutal .view-switch{
+  background:#fff; border:2px solid #0a0a0a; border-radius:5px;
+  box-shadow:2px 2px 0 #0a0a0a; color:#0a0a0a; font-weight:800;
+}
+body.skin-brutal .lyric-tools button:hover,body.skin-brutal .view-switch:hover{
+  border-color:#0a0a0a; box-shadow:3px 3px 0 #8b5cf6; color:#0a0a0a;
+}
+body.skin-brutal .vinyl .disc{
+  background:
+    repeating-radial-gradient(circle at 50% 50%, rgba(0,0,0,.12) 0 2px, transparent 2px 6px),
+    radial-gradient(circle at 50% 50%, #2b2b2b 0%, #0a0a0a 72%, #000 100%);
+  border:3px solid #0a0a0a;
+  box-shadow:7px 7px 0 #ffe066;
+}
+body.skin-brutal .vinyl .cover{
+  border:3px solid #0a0a0a; box-shadow:0 0 0 5px #fff;
+}
+body.skin-brutal .vinyl .hole{background:#ffe066; border:3px solid #0a0a0a}
+body.skin-brutal .cover-card{
+  background:#fff; border:3px solid #0a0a0a; border-radius:8px;
+  box-shadow:7px 7px 0 #0a0a0a;
+}
+body.skin-brutal .now .title{font-weight:900; font-size:20px}
+body.skin-brutal .now .artist{font-weight:700; color:#3d3d3d}
+body.skin-brutal .ctrl{
+  background:#fff; border:3px solid #0a0a0a; border-radius:6px;
+  box-shadow:4px 4px 0 #0a0a0a; color:#0a0a0a;
+  transition:transform .12s, box-shadow .12s;
+}
+body.skin-brutal .ctrl:hover{
+  border-color:#0a0a0a; box-shadow:6px 6px 0 #0a0a0a; transform:translate(-2px,-2px);
+}
+body.skin-brutal .ctrl:active{transform:translate(2px,2px); box-shadow:2px 2px 0 #0a0a0a}
+body.skin-brutal .ctrl.play{
+  background:#ffe066; color:#0a0a0a; border:3px solid #0a0a0a;
+  box-shadow:5px 5px 0 #0a0a0a;
+}
+body.skin-brutal .ctrl.play:hover{box-shadow:7px 7px 0 #0a0a0a}
+body.skin-brutal .ctrl.karaoke-on{background:#c4b5fd; color:#0a0a0a; border-color:#0a0a0a; box-shadow:4px 4px 0 #0a0a0a}
+body.skin-brutal .ctrl.mode-on{background:#a7f3d0; color:#0a0a0a; border-color:#0a0a0a; box-shadow:4px 4px 0 #0a0a0a}
+body.skin-brutal .bar,body.skin-brutal .vol-bar{
+  background:#fff; border:2px solid #0a0a0a; border-radius:3px; height:10px;
+}
+body.skin-brutal .bar .fill,body.skin-brutal .vol-bar .fill{
+  background:#ffe066; border-right:2px solid #0a0a0a; border-radius:0; box-shadow:none;
+}
+body.skin-brutal .bar .knob,body.skin-brutal .vol-bar .knob{
+  background:#0a0a0a; border-radius:0; width:10px; height:16px; box-shadow:none;
+}
+body.skin-brutal .times{font-weight:800; color:#0a0a0a}
+body.skin-brutal .list-wrap{
+  background:#fff; border:3px solid #0a0a0a; border-radius:8px; backdrop-filter:none;
+  box-shadow:7px 7px 0 #0a0a0a;
+}
+body.skin-brutal .row{border-radius:4px}
+body.skin-brutal .row:hover{background:#ffe066; box-shadow:3px 3px 0 #0a0a0a; border:2px solid #0a0a0a; padding:8px 12px}
+body.skin-brutal .row .idx{font-weight:900}
+body.skin-brutal .row .cov{
+  background:#fdf6e3; border:2px solid #0a0a0a; border-radius:4px; color:#0a0a0a;
+}
+body.skin-brutal .row.playing .meta .t{color:#0a0a0a; font-weight:900}
+body.skin-brutal .row .eq{color:#0a0a0a; font-weight:900}
+body.skin-brutal .card{
+  background:#fff; border:3px solid #0a0a0a; border-radius:6px;
+  box-shadow:5px 5px 0 #0a0a0a; transition:transform .12s, box-shadow .12s;
+}
+body.skin-brutal .card:hover{border-color:#0a0a0a; transform:translate(-2px,-2px); box-shadow:7px 7px 0 #0a0a0a}
+body.skin-brutal .card .cover{background:#fdf6e3}
+body.skin-brutal .card .name{font-weight:800}
+body.skin-brutal #toast{
+  background:#ffe066; color:#0a0a0a; border:3px solid #0a0a0a; border-radius:6px;
+  box-shadow:5px 5px 0 #0a0a0a; font-weight:800;
+}
+body.skin-brutal ::-webkit-scrollbar{width:14px}
+body.skin-brutal ::-webkit-scrollbar-thumb{background:#0a0a0a; border-radius:0; border:3px solid #fdf6e3}
+
+/* ---------------------------------------------------------------
+   外观选择面板（标题栏外观按钮下拉）
+   --------------------------------------------------------------- */
+.look-wrap{position:relative; flex:none}
+.look-menu{
+  position:absolute; top:calc(100% + 10px); right:0; z-index:60;
+  width:216px; padding:8px; border-radius:16px; display:none;
+  /* 竖屏窗口矮，10 套外观 + 两个二级选项会超出一屏：允许滚动 */
+  max-height:calc(100vh - 92px); overflow-y:auto; overscroll-behavior:contain;
+  /* 浮层要读字：用足够实的底 + 投影，不用 backdrop-filter
+     （毛玻璃只适合承载内容的版面，浮层叠一层模糊会连带把文字糊掉） */
+  background:rgba(9,18,34,.97);
+  border:1px solid var(--stroke); box-shadow:0 24px 60px rgba(0,0,0,.5);
+}
+.look-menu.open{display:block}
+.look-item{
+  display:flex; align-items:center; gap:10px; width:100%; padding:9px 11px;
+  border-radius:10px; font-size:13px; color:var(--txt-dim); text-align:left; transition:.12s;
+}
+.look-item:hover{background:var(--glass-strong); color:var(--txt)}
+.look-item.on{background:var(--glass-strong); color:var(--txt); font-weight:600}
+.look-item .sw{
+  width:20px; height:20px; border-radius:6px; flex:none;
+  border:1px solid rgba(160,215,255,.3); box-shadow:inset 0 0 0 1px rgba(0,0,0,.15);
+}
+.look-item .lbl{flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.look-item .tick{font-size:12px; color:var(--accent-3); opacity:0}
+.look-item.on .tick{opacity:1}
+/* 分组分隔：上面 6 套完整皮肤，下面 3 种纯配色 */
+.look-sep{height:1px; margin:7px 9px; background:var(--stroke)}
+.look-cap{padding:2px 12px 6px; font-size:11px; letter-spacing:.08em; color:var(--txt-faint)}
+/* 二级选项：玻璃的色调滑杆 / 灯箱的配色圆点（挂在对应皮肤那一行下面） */
+.look-sub{display:flex; align-items:center; gap:6px; padding:1px 10px 9px; flex-wrap:wrap}
+.look-sub .cap{font-size:11px; letter-spacing:.06em; color:var(--txt-faint); flex:none}
+.look-sub input[type=range]{
+  -webkit-appearance:none; appearance:none; flex:1; min-width:0; height:8px; border-radius:4px;
+  outline:none; cursor:pointer;
+  background:linear-gradient(90deg,#ff6b8b,#ffd166,#8ef07a,#5ce1e6,#7c9bff,#c98cff,#ff6b8b);
+}
+.look-sub input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; width:15px; height:15px; border-radius:50%; background:#fff;
+  border:2px solid #0a1220; box-shadow:0 2px 8px rgba(0,0,0,.55);
+}
+.lm-dot{
+  width:15px; height:15px; border-radius:50%; flex:none; cursor:pointer; padding:0;
+  border:1px solid rgba(255,255,255,.28); transition:transform .14s, box-shadow .14s;
+}
+.lm-dot:hover{transform:scale(1.16)}
+.lm-dot.on{transform:scale(1.12); box-shadow:0 0 0 2px rgba(255,255,255,.9), 0 0 12px rgba(255,255,255,.35)}
+/* 面板跟随皮肤 */
+body.skin-neumorph .look-menu{
+  background:#e3e8ef; border:none; border-radius:16px;
+  box-shadow:8px 8px 20px #c2c9d4, -8px -8px 20px #ffffff;
+}
+body.skin-neumorph .look-item:hover,body.skin-neumorph .look-item.on{background:#e3e8ef; box-shadow:inset 3px 3px 7px #c2c9d4, inset -3px -3px 7px #fff}
+body.skin-glass .look-menu{
+  /* 菜单要读字，不能用极透玻璃，否则背后的面板元素会穿过来；也不叠 backdrop-filter */
+  background:rgba(22,16,46,.97); border:1px solid rgba(255,255,255,.24);
+  box-shadow:0 20px 50px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.18);
+}
+body.skin-brutal .look-menu{
+  background:#fff; border:3px solid #0a0a0a; border-radius:8px; box-shadow:6px 6px 0 #0a0a0a;
+}
+body.skin-brutal .look-item{border-radius:4px; font-weight:700; color:#0a0a0a}
+body.skin-brutal .look-item:hover{background:#ffe066}
+body.skin-brutal .look-item.on{background:#ffe066; border:2px solid #0a0a0a}
+body.skin-brutal .look-item .sw{border:2px solid #0a0a0a; border-radius:3px}
+
+/* ---------------------------------------------------------------
+   ④ 8-BIT 像素 —— Retro Pixel / CRT 复古终端
+   零圆角 · 2px 硬边 · NES 式 bevel（内亮边+内暗边）· 等宽字 · 扫描线
+   与新粗野同属硬派，但视觉语言不同：
+     新粗野 = 粗黑轮廓 + 错位实投影（印刷海报）
+     8-BIT  = 1px 阶梯边 + 荧光绿 + 栅格扫描线（显像管）
+   --------------------------------------------------------------- */
+body.skin-pixel{
+  --bg-0:#070d09; --bg-1:#0a1410; --bg-2:#050a07;
+  --glass:rgba(57,255,136,.06); --glass-strong:rgba(57,255,136,.14);
+  --stroke:#3f8f64; --stroke-strong:#39ff88;
+  --txt:#c9ffe0; --txt-dim:#79c79b; --txt-faint:#417f5f;
+  --accent:#39ff88; --accent-2:#39ff88; --accent-3:#ffd23f;
+  --glow:rgba(57,255,136,.20); --glow-soft:rgba(57,255,136,.30);
+  --bg-glow-1:rgba(57,255,136,.06); --bg-glow-2:rgba(0,180,255,.04);
+  --viz-bg-top:#08120d; --viz-bg-bottom:#050c08;
+  --input-bg:#0a1410;
+  --danger:#ff5c5c;
+  background-color:#070d09;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(0,0,0,.44) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(57,255,136,.032) 0 1px, transparent 1px 4px),
+    radial-gradient(130% 80% at 50% 0%, rgba(57,255,136,.10), transparent 64%);
+  /* 等宽优先：拉丁/数字走 Consolas，中文回退黑体（绝不能落到宋体，一落衬线复古感全毁） */
+  font-family:Consolas,'Courier New','Microsoft YaHei','PingFang SC','Noto Sans CJK SC',monospace;
+  letter-spacing:.4px;
+  font-variant-numeric:tabular-nums;
+}
+body.skin-pixel::before{display:none}
+body.skin-pixel .login-card{
+  background:#0b1611; backdrop-filter:none;
+  border:2px solid #39ff88; border-radius:0;
+  box-shadow:0 0 0 2px #050a07, 8px 8px 0 rgba(0,0,0,.55), 0 0 34px rgba(57,255,136,.20);
+}
+body.skin-pixel .logo .disc{
+  background:#39ff88; border:2px solid #050a07; border-radius:50%;
+  box-shadow:0 0 16px rgba(57,255,136,.6);
+}
+body.skin-pixel .logo .disc::after{background:#07100b; box-shadow:none}
+body.skin-pixel .logo h1{
+  font-weight:800; letter-spacing:2px; text-transform:uppercase; color:#39ff88;
+  text-shadow:0 0 12px rgba(57,255,136,.55);
+}
+body.skin-pixel .logo h1 small{color:#79c79b; letter-spacing:2px; font-weight:700}
+body.skin-pixel .field label{
+  font-weight:700; color:#79c79b; text-transform:uppercase; letter-spacing:1.6px; font-size:11px;
+}
+body.skin-pixel .field input{
+  background:#08120d; border:2px solid #3f8f64; border-radius:0; color:#c9ffe0;
+  box-shadow:inset 2px 2px 0 rgba(0,0,0,.55); font-family:inherit; letter-spacing:.6px;
+}
+body.skin-pixel .field input:focus{
+  border-color:#39ff88; outline:none; box-shadow:inset 2px 2px 0 rgba(0,0,0,.55), 0 0 16px rgba(57,255,136,.35);
+}
+body.skin-pixel .btn-login{
+  background:#39ff88; color:#04120a; border:2px solid #04120a; border-radius:0;
+  box-shadow:inset 3px 3px 0 rgba(255,255,255,.55), inset -3px -3px 0 rgba(0,0,0,.28);
+  font-weight:800; text-transform:uppercase; letter-spacing:2.5px;
+  transition:transform .1s, box-shadow .1s;
+}
+body.skin-pixel .btn-login:hover{
+  background:#5cffa3;
+  box-shadow:inset 3px 3px 0 rgba(255,255,255,.6), inset -3px -3px 0 rgba(0,0,0,.3), 0 0 24px rgba(57,255,136,.5);
+}
+body.skin-pixel .btn-login:active{
+  transform:translate(2px,2px);
+  box-shadow:inset -2px -2px 0 rgba(255,255,255,.35), inset 3px 3px 0 rgba(0,0,0,.35);
+}
+body.skin-pixel .login-tip{color:#6fbd92; letter-spacing:.3px}
+body.skin-pixel header{
+  background:#08120d; backdrop-filter:none; border-bottom:2px solid #3f8f64; height:60px;
+}
+body.skin-pixel header .brand{font-weight:700; letter-spacing:1.6px; text-transform:uppercase}
+body.skin-pixel header .brand .dot{background:#39ff88; border-radius:0; box-shadow:0 0 10px rgba(57,255,136,.8)}
+body.skin-pixel .tab{
+  border-radius:0; color:#79c79b; font-weight:700; border:2px solid transparent;
+  text-transform:uppercase; letter-spacing:1.4px; font-size:12px;
+}
+body.skin-pixel .tab.active{
+  background:rgba(57,255,136,.14); border:2px solid #39ff88; color:#39ff88;
+  box-shadow:inset 2px 2px 0 rgba(0,0,0,.3);
+}
+body.skin-pixel .searchbox input{
+  background:#08120d; border:2px solid #3f8f64; border-radius:0; color:#c9ffe0;
+  box-shadow:inset 2px 2px 0 rgba(0,0,0,.55); font-family:inherit;
+}
+body.skin-pixel .searchbox input:focus{border-color:#39ff88; box-shadow:inset 2px 2px 0 rgba(0,0,0,.55), 0 0 14px rgba(57,255,136,.3)}
+body.skin-pixel .btn-theme,body.skin-pixel .btn-logout{
+  background:#0b1611; border:2px solid #3f8f64; border-radius:0; color:#79c79b;
+  box-shadow:inset 2px 2px 0 rgba(57,255,136,.18), inset -2px -2px 0 rgba(0,0,0,.5);
+  transition:.12s;
+}
+body.skin-pixel .btn-theme:hover{
+  border-color:#39ff88; color:#39ff88; box-shadow:0 0 16px rgba(57,255,136,.4), inset 2px 2px 0 rgba(57,255,136,.25);
+}
+body.skin-pixel .btn-logout:hover{border-color:#ff5c5c; color:#ff5c5c; box-shadow:0 0 16px rgba(255,92,92,.35)}
+body.skin-pixel .user-chip{font-weight:700; letter-spacing:.6px}
+body.skin-pixel .user-chip .avatar{
+  background:#39ff88; color:#04120a; border:2px solid #04120a; border-radius:0; font-weight:800;
+  box-shadow:inset -2px -2px 0 rgba(0,0,0,.3);
+}
+body.skin-pixel #player{gap:18px; padding:18px 22px}
+body.skin-pixel .panel,body.skin-pixel .player-box{
+  background:rgba(9,20,15,.92); backdrop-filter:none;
+  border:2px solid #3f8f64; border-radius:0;
+  box-shadow:6px 6px 0 rgba(0,0,0,.5), inset 0 0 0 1px rgba(57,255,136,.10);
+}
+body.skin-pixel .viz-row{
+  background:rgba(6,14,10,.95); backdrop-filter:none;
+  border:2px solid #3f8f64; border-radius:0;
+  box-shadow:6px 6px 0 rgba(0,0,0,.5), inset 0 0 24px rgba(57,255,136,.08);
+}
+body.skin-pixel .wave-tag{
+  color:#04120a; font-weight:800; letter-spacing:2px; text-transform:uppercase;
+  background:#39ff88; padding:0 6px; border-radius:0;
+}
+body.skin-pixel #lyricPanel .wave-tag{background:#39ff88; margin:12px 0 0 14px; display:inline-block}
+body.skin-pixel .lyric-centerline{background:none; border-top:2px dashed #3f8f64; height:0}
+body.skin-pixel .lyric-line{
+  color:#4d8f6c; border-radius:0; font-weight:700; letter-spacing:.4px;
+}
+body.skin-pixel .lyric-line.active{
+  color:#39ff88; font-weight:700; text-shadow:0 0 14px rgba(57,255,136,.75);
+  background:none;
+}
+body.skin-pixel .lyric-tools button,body.skin-pixel .view-switch{
+  background:#0b1611; border:2px solid #3f8f64; border-radius:0; color:#79c79b;
+  box-shadow:inset 2px 2px 0 rgba(57,255,136,.18), inset -2px -2px 0 rgba(0,0,0,.5);
+}
+body.skin-pixel .lyric-tools button:hover,body.skin-pixel .view-switch:hover{
+  border-color:#39ff88; color:#39ff88; box-shadow:0 0 14px rgba(57,255,136,.45);
+}
+body.skin-pixel .vinyl .disc{
+  background:
+    repeating-radial-gradient(circle at 50% 50%, rgba(57,255,136,.14) 0 2px, transparent 2px 7px),
+    radial-gradient(circle at 50% 50%, #0b1a13 0%, #050c08 74%, #020604 100%);
+  border:2px solid #39ff88;
+  box-shadow:0 0 0 6px rgba(57,255,136,.10), 0 0 34px rgba(57,255,136,.28);
+}
+body.skin-pixel .vinyl .cover{border:2px solid #39ff88; box-shadow:0 0 0 4px #050c08}
+body.skin-pixel .vinyl .hole{background:#39ff88; border:2px solid #050c08}
+body.skin-pixel .cover-card{
+  background:#0b1611; border:2px solid #39ff88; border-radius:0;
+  box-shadow:6px 6px 0 rgba(0,0,0,.5), 0 0 26px rgba(57,255,136,.16);
+}
+body.skin-pixel .now .title{
+  font-weight:800; font-size:19px; color:#39ff88; letter-spacing:1px; text-transform:uppercase;
+  text-shadow:0 0 12px rgba(57,255,136,.5);
+}
+body.skin-pixel .now .artist{font-weight:700; color:#79c79b; letter-spacing:.8px}
+body.skin-pixel .ctrl{
+  background:#0b1611; border:2px solid #3f8f64; border-radius:0; color:#c9ffe0;
+  box-shadow:inset 2px 2px 0 rgba(57,255,136,.20), inset -2px -2px 0 rgba(0,0,0,.55);
+  transition:transform .1s, box-shadow .1s;
+}
+body.skin-pixel .ctrl:hover{border-color:#39ff88; color:#39ff88; box-shadow:0 0 18px rgba(57,255,136,.5)}
+body.skin-pixel .ctrl:active{transform:translate(2px,2px)}
+body.skin-pixel .ctrl.play{
+  background:#39ff88; color:#04120a; border:2px solid #04120a; border-radius:0;
+  box-shadow:inset 3px 3px 0 rgba(255,255,255,.55), inset -3px -3px 0 rgba(0,0,0,.28), 0 0 22px rgba(57,255,136,.45);
+}
+body.skin-pixel .ctrl.play:hover{background:#5cffa3; box-shadow:0 0 28px rgba(57,255,136,.6)}
+body.skin-pixel .ctrl.karaoke-on{
+  background:rgba(57,255,136,.18); color:#39ff88; border-color:#39ff88;
+}
+body.skin-pixel .ctrl.mode-on{
+  background:rgba(255,210,63,.16); color:#ffd23f; border-color:#ffd23f;
+}
+body.skin-pixel .bar,body.skin-pixel .vol-bar{
+  background:#08120d; border:2px solid #3f8f64; border-radius:0; height:10px;
+  box-shadow:inset 2px 2px 0 rgba(0,0,0,.6);
+}
+body.skin-pixel .bar .fill,body.skin-pixel .vol-bar .fill{
+  background:#39ff88; border-radius:0; box-shadow:0 0 12px rgba(57,255,136,.55);
+}
+body.skin-pixel .bar .knob,body.skin-pixel .vol-bar .knob{
+  background:#c9ffe0; border:2px solid #04120a; border-radius:0; width:8px; height:16px; box-shadow:none;
+}
+body.skin-pixel .times{font-weight:700; color:#ffd23f; letter-spacing:1.4px; opacity:.9}
+body.skin-pixel .list-wrap{
+  background:rgba(9,20,15,.92); backdrop-filter:none;
+  border:2px solid #3f8f64; border-radius:0; box-shadow:6px 6px 0 rgba(0,0,0,.5);
+}
+body.skin-pixel .row{border-radius:0}
+body.skin-pixel .row:hover{background:rgba(57,255,136,.10); border-left:2px solid #39ff88}
+body.skin-pixel .row .idx{font-weight:700; color:#417f5f}
+body.skin-pixel .row .cov{
+  background:#08120d; border:2px solid #3f8f64; border-radius:0; color:#79c79b;
+}
+body.skin-pixel .row .meta .t{color:#c9ffe0}
+body.skin-pixel .row .meta .a{color:#79c79b}
+body.skin-pixel .row.playing .meta .t{color:#39ff88; font-weight:800}
+body.skin-pixel .row .eq{color:#39ff88}
+body.skin-pixel .card{
+  background:#0b1611; border:2px solid #3f8f64; border-radius:0;
+  box-shadow:4px 4px 0 rgba(0,0,0,.5); transition:.12s;
+}
+body.skin-pixel .card:hover{border-color:#39ff88; box-shadow:0 0 22px rgba(57,255,136,.35); transform:translate(-2px,-2px)}
+body.skin-pixel .card .cover{background:#08120d}
+body.skin-pixel .card .name{font-weight:700; color:#c9ffe0}
+body.skin-pixel #toast{
+  background:#39ff88; color:#04120a; border:2px solid #04120a; border-radius:0;
+  box-shadow:6px 6px 0 rgba(0,0,0,.5); font-weight:800; letter-spacing:1.4px;
+}
+body.skin-pixel ::-webkit-scrollbar{width:12px}
+body.skin-pixel ::-webkit-scrollbar-thumb{background:#3f8f64; border-radius:0; border:2px solid #070d09}
+
+/* ---------------------------------------------------------------
+   ⑤ 黏土 —— Claymorphism
+   同色浅底 · 大圆角 26~30px · 三重叠影做「捏出来」的膨胀感：
+     外软投影 + 顶部内高光 + 底部内暗边
+   没有边框、没有硬边，全靠体积感，与任何机械风都互斥
+   --------------------------------------------------------------- */
+body.skin-clay{
+  --bg-0:#e6ebf8; --bg-1:#e9eefb; --bg-2:#eef1fc;
+  --glass:rgba(255,255,255,.72); --glass-strong:#f5f8ff;
+  --stroke:rgba(122,136,182,.18); --stroke-strong:rgba(122,136,182,.32);
+  --txt:#2b2f4a; --txt-dim:#6c7296; --txt-faint:#a6accb;
+  --accent:#7c5cff; --accent-2:#7c5cff; --accent-3:#ff7eb6;
+  --glow:rgba(124,92,255,.20); --glow-soft:rgba(124,92,255,.28);
+  --bg-glow-1:rgba(255,126,182,.26); --bg-glow-2:rgba(124,92,255,.22);
+  --viz-bg-top:#f6f9ff; --viz-bg-bottom:#e9eefb;
+  --input-bg:#f7f9ff;
+  --danger:#e8506d;
+  background-color:#e6ebf8;
+  background-image:
+    radial-gradient(760px 600px at 8% 0%, rgba(255,126,182,.34), transparent 62%),
+    radial-gradient(700px 560px at 92% 6%, rgba(124,92,255,.28), transparent 60%),
+    radial-gradient(720px 640px at 72% 98%, rgba(84,214,255,.26), transparent 64%);
+  font-weight:600;
+}
+body.skin-clay::before{display:none}
+body.skin-clay .login-card{
+  background:#eef2fc; backdrop-filter:none; border:none; border-radius:32px;
+  box-shadow:0 26px 54px rgba(88,102,150,.24),
+             inset 0 7px 14px rgba(255,255,255,.95),
+             inset 0 -8px 16px rgba(88,102,150,.13);
+}
+body.skin-clay .logo .disc{
+  background:linear-gradient(160deg,#a48bff,#7c5cff); border:none; border-radius:50%;
+  box-shadow:0 12px 24px rgba(124,92,255,.42),
+             inset 0 5px 10px rgba(255,255,255,.65),
+             inset 0 -5px 10px rgba(60,40,140,.30);
+}
+body.skin-clay .logo .disc::after{background:#eef2fc; box-shadow:inset 0 3px 6px rgba(88,102,150,.25)}
+body.skin-clay .logo h1{font-weight:800; letter-spacing:-.4px; color:#2b2f4a}
+body.skin-clay .logo h1 small{color:#7c5cff; font-weight:700}
+body.skin-clay .field label{font-weight:700; color:#6c7296; letter-spacing:.3px}
+body.skin-clay .field input{
+  background:#f4f7ff; border:none; border-radius:20px; color:#2b2f4a; font-weight:600;
+  box-shadow:inset 4px 4px 9px rgba(122,136,182,.24),
+             inset -4px -4px 9px rgba(255,255,255,.95);
+}
+body.skin-clay .field input:focus{
+  outline:none; box-shadow:inset 4px 4px 9px rgba(122,136,182,.20),
+             inset -4px -4px 9px #fff, 0 0 0 3px rgba(124,92,255,.24);
+}
+body.skin-clay .btn-login{
+  background:linear-gradient(180deg,#9c83ff,#7c5cff); color:#fff; border:none; border-radius:20px;
+  box-shadow:0 14px 26px rgba(124,92,255,.42),
+             inset 0 5px 10px rgba(255,255,255,.55),
+             inset 0 -6px 12px rgba(58,38,138,.35);
+  font-weight:800; letter-spacing:.6px;
+  transition:transform .14s, box-shadow .14s;
+}
+body.skin-clay .btn-login:hover{transform:translateY(-2px); box-shadow:0 18px 32px rgba(124,92,255,.5), inset 0 5px 10px rgba(255,255,255,.6), inset 0 -6px 12px rgba(58,38,138,.35)}
+body.skin-clay .btn-login:active{transform:translateY(1px); box-shadow:0 8px 16px rgba(124,92,255,.4), inset 0 4px 10px rgba(58,38,138,.4)}
+body.skin-clay .login-tip{color:#6c7296; font-weight:600}
+body.skin-clay header{
+  background:rgba(238,242,252,.85); backdrop-filter:blur(18px); border-bottom:none;
+  box-shadow:0 6px 18px rgba(88,102,150,.10); height:62px;
+}
+body.skin-clay header .brand{font-weight:800; color:#2b2f4a}
+body.skin-clay header .brand .dot{
+  background:linear-gradient(160deg,#ff9ec4,#ff7eb6); border-radius:50%; box-shadow:0 3px 8px rgba(255,126,182,.5);
+}
+body.skin-clay .tab{border-radius:16px; color:#6c7296; font-weight:700}
+body.skin-clay .tab.active{
+  background:#eef2fc; color:#7c5cff;
+  box-shadow:inset 3px 3px 6px rgba(122,136,182,.26), inset -3px -3px 6px #fff;
+}
+body.skin-clay .searchbox input{
+  background:#eef2fc; border:none; border-radius:18px; color:#2b2f4a; font-weight:600;
+  box-shadow:inset 3px 3px 8px rgba(122,136,182,.24), inset -3px -3px 8px #fff;
+}
+body.skin-clay .searchbox input:focus{outline:none; box-shadow:inset 3px 3px 8px rgba(122,136,182,.2), inset -3px -3px 8px #fff, 0 0 0 3px rgba(124,92,255,.22)}
+body.skin-clay .btn-theme,body.skin-clay .btn-logout{
+  background:#eef2fc; border:none; border-radius:14px; color:#6c7296;
+  box-shadow:0 6px 14px rgba(88,102,150,.16), inset 0 3px 6px rgba(255,255,255,.95), inset 0 -3px 6px rgba(88,102,150,.12);
+  transition:.14s;
+}
+body.skin-clay .btn-theme:hover{color:#7c5cff; transform:translateY(-1px); box-shadow:0 10px 20px rgba(124,92,255,.26), inset 0 3px 6px rgba(255,255,255,.95)}
+body.skin-clay .btn-logout:hover{color:#e8506d; transform:translateY(-1px)}
+body.skin-clay .user-chip{font-weight:700; color:#2b2f4a}
+body.skin-clay .user-chip .avatar{
+  background:linear-gradient(160deg,#a48bff,#7c5cff); color:#fff; border-radius:50%; font-weight:800;
+  box-shadow:0 6px 14px rgba(124,92,255,.4), inset 0 3px 6px rgba(255,255,255,.5);
+}
+body.skin-clay #player{gap:22px; padding:22px 26px}
+body.skin-clay .panel,body.skin-clay .player-box{
+  background:#eef2fc; backdrop-filter:none; border:none; border-radius:30px;
+  box-shadow:0 24px 48px rgba(88,102,150,.20),
+             inset 0 7px 14px rgba(255,255,255,.95),
+             inset 0 -8px 16px rgba(88,102,150,.12);
+}
+body.skin-clay .viz-row{
+  background:#eef2fc; backdrop-filter:none; border:none; border-radius:30px;
+  box-shadow:0 20px 40px rgba(88,102,150,.18),
+             inset 0 6px 12px rgba(255,255,255,.95),
+             inset 0 -7px 14px rgba(88,102,150,.12);
+}
+body.skin-clay .wave-tag{
+  color:#7c5cff; font-weight:800; letter-spacing:1px;
+  background:rgba(124,92,255,.12); padding:2px 10px; border-radius:10px;
+}
+body.skin-clay #lyricPanel .wave-tag{background:rgba(124,92,255,.12); margin:12px 0 0 14px; display:inline-block}
+body.skin-clay .lyric-centerline{background:linear-gradient(90deg,transparent,rgba(124,92,255,.18),transparent)}
+body.skin-clay .lyric-line{color:#a6accb; border-radius:14px; font-weight:700}
+body.skin-clay .lyric-line.active{
+  color:#7c5cff; font-weight:800; text-shadow:0 2px 8px rgba(124,92,255,.28);
+}
+body.skin-clay .lyric-tools button,body.skin-clay .view-switch{
+  background:#eef2fc; border:none; border-radius:12px; color:#6c7296; font-weight:800;
+  box-shadow:0 5px 12px rgba(88,102,150,.16), inset 0 3px 6px rgba(255,255,255,.95), inset 0 -3px 6px rgba(88,102,150,.10);
+}
+body.skin-clay .lyric-tools button:hover,body.skin-clay .view-switch:hover{color:#7c5cff; box-shadow:0 8px 18px rgba(124,92,255,.26), inset 0 3px 6px rgba(255,255,255,.95)}
+body.skin-clay .vinyl .disc{
+  background:
+    repeating-radial-gradient(circle at 50% 50%, rgba(255,255,255,.16) 0 2px, transparent 2px 7px),
+    radial-gradient(circle at 34% 26%, #b6a4ff, #7c5cff 42%, #4b31c4 100%);
+  border:none;
+  box-shadow:0 22px 44px rgba(124,92,255,.38),
+             inset 0 8px 16px rgba(255,255,255,.45),
+             inset 0 -10px 20px rgba(45,26,110,.4);
+}
+body.skin-clay .vinyl .cover{border:4px solid #eef2fc; box-shadow:0 10px 24px rgba(88,102,150,.28)}
+body.skin-clay .vinyl .hole{
+  background:linear-gradient(160deg,#fff,#dfe6f8); border:none;
+  box-shadow:inset 0 2px 5px rgba(88,102,150,.35);
+}
+body.skin-clay .cover-card{
+  background:#eef2fc; border:none; border-radius:30px;
+  box-shadow:0 24px 48px rgba(88,102,150,.20),
+             inset 0 7px 14px rgba(255,255,255,.95),
+             inset 0 -8px 16px rgba(88,102,150,.12);
+}
+body.skin-clay .now .title{font-weight:800; color:#2b2f4a; letter-spacing:-.2px}
+body.skin-clay .now .artist{font-weight:700; color:#6c7296}
+body.skin-clay .ctrl{
+  background:#eef2fc; border:none; border-radius:16px; color:#6c7296;
+  box-shadow:0 8px 18px rgba(88,102,150,.18),
+             inset 0 4px 8px rgba(255,255,255,.95),
+             inset 0 -4px 8px rgba(88,102,150,.12);
+  transition:transform .14s, box-shadow .14s;
+}
+body.skin-clay .ctrl:hover{color:#7c5cff; transform:translateY(-2px); box-shadow:0 12px 24px rgba(124,92,255,.28), inset 0 4px 8px rgba(255,255,255,.95)}
+body.skin-clay .ctrl:active{transform:translateY(1px); box-shadow:0 5px 10px rgba(88,102,150,.22), inset 0 4px 10px rgba(88,102,150,.20)}
+body.skin-clay .ctrl.play{
+  background:linear-gradient(160deg,#9c83ff,#7c5cff); color:#fff; border:none;
+  box-shadow:0 14px 28px rgba(124,92,255,.45),
+             inset 0 5px 10px rgba(255,255,255,.5),
+             inset 0 -6px 12px rgba(58,38,138,.35);
+}
+body.skin-clay .ctrl.play:hover{box-shadow:0 18px 34px rgba(124,92,255,.55), inset 0 5px 10px rgba(255,255,255,.55)}
+body.skin-clay .ctrl.karaoke-on{
+  background:linear-gradient(160deg,#ffa6c9,#ff7eb6); color:#fff;
+  box-shadow:0 12px 24px rgba(255,126,182,.42), inset 0 4px 8px rgba(255,255,255,.5);
+}
+body.skin-clay .ctrl.mode-on{
+  background:linear-gradient(160deg,#8ee0ff,#54d6ff); color:#08425a;
+  box-shadow:0 12px 24px rgba(84,214,255,.42), inset 0 4px 8px rgba(255,255,255,.55);
+}
+body.skin-clay .bar,body.skin-clay .vol-bar{
+  background:#e3e9f9; border:none; border-radius:8px; height:9px;
+  box-shadow:inset 3px 3px 6px rgba(122,136,182,.30), inset -3px -3px 6px rgba(255,255,255,.9);
+}
+body.skin-clay .bar .fill,body.skin-clay .vol-bar .fill{
+  background:linear-gradient(90deg,#9c83ff,#7c5cff); border-radius:8px; box-shadow:none;
+}
+body.skin-clay .bar .knob,body.skin-clay .vol-bar .knob{
+  background:linear-gradient(160deg,#fff,#e6ecfa); border-radius:50%; width:16px; height:16px;
+  box-shadow:0 4px 10px rgba(88,102,150,.35), inset 0 2px 4px rgba(255,255,255,.9);
+}
+body.skin-clay .times{font-weight:700; color:#6c7296}
+body.skin-clay .list-wrap{
+  background:#eef2fc; backdrop-filter:none; border:none; border-radius:28px;
+  box-shadow:0 22px 44px rgba(88,102,150,.18),
+             inset 0 7px 14px rgba(255,255,255,.95),
+             inset 0 -8px 16px rgba(88,102,150,.12);
+}
+body.skin-clay .row{border-radius:18px}
+body.skin-clay .row:hover{
+  background:#eef2fc;
+  box-shadow:inset 3px 3px 7px rgba(122,136,182,.22), inset -3px -3px 7px #fff;
+}
+body.skin-clay .row .idx{font-weight:800; color:#a6accb}
+body.skin-clay .row .cov{
+  background:linear-gradient(160deg,#e9eefc,#dfe6f8); border:none; border-radius:14px; color:#a6accb;
+  box-shadow:inset 2px 2px 5px rgba(122,136,182,.22), inset -2px -2px 5px #fff;
+}
+body.skin-clay .row .meta .t{color:#2b2f4a; font-weight:700}
+body.skin-clay .row .meta .a{color:#6c7296}
+body.skin-clay .row.playing .meta .t{color:#7c5cff; font-weight:800}
+body.skin-clay .row .eq{color:#7c5cff}
+body.skin-clay .card{
+  background:#eef2fc; border:none; border-radius:26px;
+  box-shadow:0 16px 32px rgba(88,102,150,.18),
+             inset 0 5px 10px rgba(255,255,255,.95),
+             inset 0 -6px 12px rgba(88,102,150,.12);
+  transition:transform .14s, box-shadow .14s;
+}
+body.skin-clay .card:hover{transform:translateY(-4px); box-shadow:0 24px 44px rgba(124,92,255,.24), inset 0 5px 10px rgba(255,255,255,.95)}
+body.skin-clay .card .cover{background:#e3e9f9; border-radius:18px}
+body.skin-clay .card .name{font-weight:800; color:#2b2f4a}
+body.skin-clay #toast{
+  background:linear-gradient(160deg,#9c83ff,#7c5cff); color:#fff; border:none; border-radius:18px;
+  box-shadow:0 16px 32px rgba(124,92,255,.45), inset 0 4px 8px rgba(255,255,255,.45); font-weight:800;
+}
+body.skin-clay ::-webkit-scrollbar{width:10px}
+body.skin-clay ::-webkit-scrollbar-thumb{
+  background:rgba(122,136,182,.35); border-radius:6px; border:2px solid #e6ebf8;
+}
+
+/* ---------------------------------------------------------------
+   ⑥ 瑞士极简 —— Swiss / International Typographic Style
+   纯白底 · 零圆角 · 1px 细线 · 零阴影 · 单色红点缀
+   靠字重与栅格建立层级，不用任何材质效果（最反「玻璃」的一套）
+   --------------------------------------------------------------- */
+body.skin-swiss{
+  --bg-0:#ffffff; --bg-1:#ffffff; --bg-2:#f4f4f4;
+  --glass:#ffffff; --glass-strong:#f2f2f2;
+  --stroke:#d8d8d8; --stroke-strong:#111111;
+  --txt:#0a0a0a; --txt-dim:#585858; --txt-faint:#9b9b9b;
+  --accent:#e63329; --accent-2:#111111; --accent-3:#e63329;
+  --glow:transparent; --glow-soft:transparent;
+  --bg-glow-1:transparent; --bg-glow-2:transparent;
+  --viz-bg-top:#ffffff; --viz-bg-bottom:#ffffff;
+  --input-bg:#ffffff;
+  --danger:#e63329;
+  background-color:#fff; background-image:none;
+  font-weight:400;
+}
+body.skin-swiss::before{display:none}
+body.skin-swiss .login-card{
+  background:#fff; backdrop-filter:none; border:1px solid #111; border-radius:0;
+  box-shadow:none; padding:34px 30px;
+}
+body.skin-swiss .logo .disc{
+  background:#111; border:none; border-radius:0; width:16px; height:16px;
+  box-shadow:none; transform:rotate(0deg);
+}
+body.skin-swiss .logo .disc::after{background:#e63329; width:6px; height:6px; box-shadow:none}
+body.skin-swiss .logo h1{
+  font-weight:900; letter-spacing:-1.2px; text-transform:none; font-size:23px;
+}
+body.skin-swiss .logo h1 small{
+  font-weight:600; color:#585858; letter-spacing:.28em; text-transform:uppercase; font-size:10px;
+}
+body.skin-swiss .field label{
+  font-weight:700; color:#0a0a0a; text-transform:uppercase; letter-spacing:.24em; font-size:10px;
+}
+body.skin-swiss .field input{
+  background:#fff; border:none; border-bottom:2px solid #111; border-radius:0;
+  color:#0a0a0a; font-weight:500; padding-left:0; box-shadow:none;
+}
+body.skin-swiss .field input:focus{
+  outline:none; border-bottom-color:#e63329; box-shadow:none;
+}
+body.skin-swiss .btn-login{
+  background:#111; color:#fff; border:none; border-radius:0;
+  font-weight:700; letter-spacing:.22em; text-transform:uppercase; font-size:12px;
+  box-shadow:none; transition:background .14s;
+}
+body.skin-swiss .btn-login:hover{background:#e63329}
+body.skin-swiss .login-tip{color:#585858; font-weight:400; border-top:1px solid #d8d8d8; padding-top:12px}
+body.skin-swiss header{
+  background:#fff; backdrop-filter:none; border-bottom:1px solid #111; height:60px;
+}
+body.skin-swiss header .brand{font-weight:900; letter-spacing:-.3px; text-transform:none}
+body.skin-swiss header .brand .dot{background:#e63329; border-radius:0; box-shadow:none; width:7px; height:7px}
+body.skin-swiss .tab{
+  border-radius:0; color:#9b9b9b; font-weight:600;
+  letter-spacing:.16em; text-transform:uppercase; font-size:10.5px;
+  border-bottom:2px solid transparent; padding-bottom:2px;
+}
+body.skin-swiss .tab.active{background:none; color:#0a0a0a; border-bottom:2px solid #e63329; font-weight:800}
+body.skin-swiss .searchbox input{
+  background:#fff; border:none; border-bottom:1px solid #111; border-radius:0; color:#0a0a0a;
+  font-weight:400;
+}
+body.skin-swiss .searchbox input:focus{outline:none; border-bottom-color:#e63329; box-shadow:none}
+body.skin-swiss .btn-theme,body.skin-swiss .btn-logout{
+  background:#fff; border:1px solid #111; border-radius:0; color:#0a0a0a; font-weight:600;
+  box-shadow:none; transition:background .14s, color .14s;
+}
+body.skin-swiss .btn-theme:hover{background:#111; color:#fff}
+body.skin-swiss .btn-logout:hover{background:#e63329; border-color:#e63329; color:#fff}
+body.skin-swiss .user-chip{font-weight:700; letter-spacing:.02em}
+body.skin-swiss .user-chip .avatar{
+  background:#111; color:#fff; border-radius:0; font-weight:800;
+  box-shadow:none;
+}
+body.skin-swiss #player{gap:16px; padding:16px 22px}
+body.skin-swiss .panel,body.skin-swiss .player-box{
+  background:#fff; backdrop-filter:none; border:1px solid #111; border-radius:0;
+  box-shadow:none;
+}
+body.skin-swiss .viz-row{
+  background:#fff; backdrop-filter:none; border:1px solid #111; border-radius:0;
+  box-shadow:none;
+}
+body.skin-swiss .wave-tag{
+  color:#0a0a0a; font-weight:800; letter-spacing:.24em; text-transform:uppercase;
+  font-size:9.5px; background:none; padding:0;
+}
+body.skin-swiss #lyricPanel .wave-tag{background:none; margin:12px 0 0 14px; display:inline-block}
+body.skin-swiss .lyric-centerline{background:none; border-top:1px solid #111; height:0}
+body.skin-swiss .lyric-line{color:#9b9b9b; border-radius:0; font-weight:400; letter-spacing:-.1px}
+body.skin-swiss .lyric-line.active{
+  color:#0a0a0a; font-weight:900; text-shadow:none; letter-spacing:-.4px;
+  border-left:3px solid #e63329; padding-left:12px;
+}
+body.skin-swiss .lyric-tools button,body.skin-swiss .view-switch{
+  background:#fff; border:1px solid #111; border-radius:0; color:#0a0a0a; font-weight:700;
+  box-shadow:none; transition:background .14s, color .14s;
+}
+body.skin-swiss .lyric-tools button:hover,body.skin-swiss .view-switch:hover{background:#111; color:#fff}
+body.skin-swiss .vinyl .disc{
+  background:
+    repeating-radial-gradient(circle at 50% 50%, rgba(255,255,255,.10) 0 1px, transparent 1px 5px),
+    radial-gradient(circle at 50% 50%, #2a2a2a 0%, #0a0a0a 76%, #000 100%);
+  border:none;
+  box-shadow:none;
+}
+body.skin-swiss .vinyl .cover{border:0; box-shadow:0 0 0 1px #111}
+body.skin-swiss .vinyl .hole{background:#fff; border:none; box-shadow:0 0 0 1px #111}
+body.skin-swiss .cover-card{
+  background:#fff; border:1px solid #111; border-radius:0; box-shadow:none;
+}
+body.skin-swiss .now .title{font-weight:900; letter-spacing:-.8px; font-size:21px}
+body.skin-swiss .now .artist{font-weight:500; color:#585858; letter-spacing:.04em}
+body.skin-swiss .ctrl{
+  background:#fff; border:1px solid #111; border-radius:0; color:#0a0a0a;
+  box-shadow:none; transition:background .14s, color .14s;
+}
+body.skin-swiss .ctrl:hover{background:#111; color:#fff; border-color:#111}
+body.skin-swiss .ctrl.play{
+  background:#111; color:#fff; border:1px solid #111; border-radius:0; box-shadow:none;
+}
+body.skin-swiss .ctrl.play:hover{background:#e63329; border-color:#e63329}
+body.skin-swiss .ctrl.karaoke-on{background:#e63329; border-color:#e63329; color:#fff}
+body.skin-swiss .ctrl.mode-on{background:#111; border-color:#111; color:#fff}
+body.skin-swiss .bar,body.skin-swiss .vol-bar{
+  background:#e6e6e6; border:none; border-radius:0; height:4px;
+}
+body.skin-swiss .bar .fill,body.skin-swiss .vol-bar .fill{
+  background:#111; border-radius:0; box-shadow:none;
+}
+body.skin-swiss .bar .knob,body.skin-swiss .vol-bar .knob{
+  background:#e63329; border:none; border-radius:0; width:4px; height:14px; box-shadow:none;
+}
+body.skin-swiss .times{font-weight:600; color:#585858; letter-spacing:.06em; font-variant-numeric:tabular-nums}
+body.skin-swiss .list-wrap{
+  background:#fff; backdrop-filter:none; border:1px solid #111; border-radius:0; box-shadow:none;
+}
+body.skin-swiss .row{border-radius:0; border-bottom:1px solid #ececec}
+body.skin-swiss .row:hover{background:#f4f4f4}
+body.skin-swiss .row .idx{font-weight:700; color:#9b9b9b; font-variant-numeric:tabular-nums}
+body.skin-swiss .row .cov{
+  background:#f4f4f4; border:none; border-radius:0; color:#9b9b9b;
+}
+body.skin-swiss .row .meta .t{color:#0a0a0a; font-weight:600}
+body.skin-swiss .row .meta .a{color:#9b9b9b}
+body.skin-swiss .row.playing .meta .t{color:#e63329; font-weight:800}
+body.skin-swiss .row .eq{color:#e63329}
+body.skin-swiss .card{
+  background:#fff; border:1px solid #111; border-radius:0; box-shadow:none;
+  transition:background .14s;
+}
+body.skin-swiss .card:hover{background:#f4f4f4; transform:none; border-color:#111}
+body.skin-swiss .card .cover{background:#f4f4f4; border-radius:0}
+body.skin-swiss .card .name{font-weight:700; letter-spacing:-.2px}
+body.skin-swiss #toast{
+  background:#111; color:#fff; border:none; border-radius:0; box-shadow:none;
+  font-weight:700; letter-spacing:.14em; text-transform:uppercase; font-size:12px;
+}
+body.skin-swiss ::-webkit-scrollbar{width:8px}
+body.skin-swiss ::-webkit-scrollbar-thumb{background:#111; border-radius:0}
+
+/* 灯箱专用画布：默认全隐藏，只有 ⑦ 灯箱皮肤打开它 */
+#lmVu,#lmBars{display:none}
+
+/* ---------------------------------------------------------------
+   ⑦ 透明灯箱 —— Transparent Lightbox / Transparent OLED
+   模拟「拆掉背光的透明屏，箱内打灯，从正面透出箱内结构」：
+     极深黑底 · 零卡片 · 零实线边框 · 所有元素靠自身发光成立
+   布局与其余皮肤完全不是一套（不再左右两栏）：
+     中央 = 歌词，左 = 竖音柱，右 = 竖排播放键，底 = 贴底进度条 + 小柱群
+   —— 条条框框一律不加：分栏靠留白，层级靠亮度
+   --------------------------------------------------------------- */
+body.skin-lumen{
+  /* —— 灯箱配色 ——
+     透明屏的黑色来自「不发光」，所以箱体本质是吸光的；
+     真正看得见的是发出来的光。因此配色只调「发光色」，底永远是黑。
+     下面 8 个变量由外观面板切换（JS 写行内变量覆盖，改色不用改样式） */
+  --lm-rgb:255,181,71;      /* 主发光色 RGB */
+  --lm-rgb2:255,138,61;     /* 次发光色（更暗、更暖） */
+  --lm-rgb3:255,196,110;    /* 高亮色（灯管端面） */
+  --lm-txt:246,239,226;     /* 文字底色的 RGB，用来拼各种透明度 */
+  --lm-ink:#f6efe2;         /* 正文实色 */
+  --lm-hi:#fff4e2;          /* 最高亮（当前歌词 / 主按钮字） */
+  --lm-accent:#ffb547;      /* 强调色 */
+  --lm-accent2:#ff8a3d;     /* 强调色·暖 */
+  /* 边框色位：默认跟主发光色走；三色霓虹那套会把它单独改成深蓝 */
+  --lm-edge:var(--lm-rgb);
+  --bg-0:#000000; --bg-1:#050403; --bg-2:#000000;
+  --glass:transparent; --glass-strong:rgba(var(--lm-rgb),.10);
+  --stroke:rgba(var(--lm-rgb),.10); --stroke-strong:rgba(var(--lm-rgb),.34);
+  --txt:var(--lm-ink); --txt-dim:rgba(var(--lm-txt),.50); --txt-faint:rgba(var(--lm-txt),.26);
+  --accent:var(--lm-accent); --accent-2:var(--lm-accent); --accent-3:var(--lm-accent2);
+  --glow:rgba(var(--lm-rgb),.34); --glow-soft:rgba(var(--lm-rgb3),.52);
+  --bg-glow-1:transparent; --bg-glow-2:transparent;
+  --viz-bg-top:transparent; --viz-bg-bottom:transparent;
+  --input-bg:rgba(var(--lm-rgb),.045);
+  --danger:#ff6b5c;
+  background-color:#000;
+  background-image:
+    /* 箱内主灯从下方打上来 */
+    radial-gradient(76% 42% at 50% 108%, rgba(var(--lm-rgb),.17), transparent 72%),
+    /* 屏幕正中透出的那团光 */
+    radial-gradient(52% 44% at 50% 42%, rgba(var(--lm-rgb),.10), transparent 74%),
+    linear-gradient(180deg,#050403 0%,#000 46%,#020101 100%);
+  font-weight:500;
+}
+body.skin-lumen::before{display:none}
+
+/* 透出的箱内骨架：只在中央可见，向四周淡出（像隔着屏幕看到里面的隔板与支架） */
+body.skin-lumen #player{position:relative; display:block; padding:0; overflow:hidden}
+body.skin-lumen #player::before{
+  content:''; position:absolute; inset:0; pointer-events:none; z-index:0;
+  background-image:
+    repeating-linear-gradient(180deg, rgba(var(--lm-rgb),.055) 0 1px, transparent 1px 76px),
+    repeating-linear-gradient(90deg, rgba(var(--lm-rgb),.038) 0 1px, transparent 1px 118px);
+  -webkit-mask-image:radial-gradient(72% 66% at 50% 46%, #000 22%, transparent 86%);
+  mask-image:radial-gradient(72% 66% at 50% 46%, #000 22%, transparent 86%);
+}
+
+/* —— 重排：歌词居中 —— */
+body.skin-lumen .col-lyric{
+  position:absolute; left:124px; right:132px; top:6px; bottom:162px;
+  display:flex; flex-direction:column; z-index:2;
+}
+body.skin-lumen #lyricPanel{
+  background:none; border:none; border-radius:0; box-shadow:none; backdrop-filter:none;
+  padding:0 10px; width:100%; position:relative;
+}
+body.skin-lumen .wave-tag{display:none}
+body.skin-lumen .lyric-tools{position:absolute; right:0; top:-4px; opacity:.55; transition:opacity .2s}
+body.skin-lumen .lyric-tools:hover{opacity:.9}
+body.skin-lumen .lyric-tools button{
+  background:none; border:none; box-shadow:none; color:rgba(var(--lm-txt),.6);
+  font-weight:600; padding:2px 6px;
+}
+body.skin-lumen .lyric-tools button:hover{color:var(--lm-accent); text-shadow:0 0 14px rgba(var(--lm-rgb),.8)}
+body.skin-lumen .lyric-centerline{background:none}
+body.skin-lumen .lyric-line{
+  color:rgba(var(--lm-txt),.38); border-radius:0; font-weight:500; letter-spacing:.4px;
+  transition:color .35s, text-shadow .35s;
+}
+body.skin-lumen .lyric-line.active{
+  color:var(--lm-hi); font-weight:700;
+  /* 灯箱的核心：当前行是「屏幕自己发出来的光」 */
+  text-shadow:0 0 20px rgba(var(--lm-rgb3),.62), 0 0 46px rgba(var(--lm-rgb2),.34), 0 0 80px rgba(var(--lm-rgb2),.18);
+  background:none;
+}
+
+/* —— 重排：左竖音柱 / 右竖播放键 / 贴底进度 —— */
+body.skin-lumen .col-player{position:absolute; inset:0; display:block; pointer-events:none; z-index:2}
+body.skin-lumen .viz-row{display:none}
+body.skin-lumen .player-box{
+  position:absolute; inset:0; display:block;
+  background:none; border:none; border-radius:0; box-shadow:none; backdrop-filter:none; padding:0;
+  pointer-events:none;
+}
+/* 灯箱不留封面：屏幕里只该有光和字 */
+body.skin-lumen .vinyl,body.skin-lumen #coverCard,body.skin-lumen .view-switch,body.skin-lumen .cassette{display:none !important}
+
+/* canvas 是替换元素：left/top/bottom 不会自动拉伸，尺寸必须显式给 */
+body.skin-lumen #lmVu{
+  display:block; position:absolute; left:28px; top:34px; z-index:2;
+  width:60px; height:calc(100% - 202px);
+}
+body.skin-lumen #lmBars{
+  display:block; position:absolute; left:124px; bottom:52px; z-index:2;
+  width:calc(100% - 256px); height:26px;
+}
+
+body.skin-lumen .now{
+  position:absolute; left:124px; right:132px; bottom:100px; max-width:none; text-align:center;
+}
+body.skin-lumen .now .title{
+  font-size:15px; font-weight:600; color:var(--lm-ink); letter-spacing:2px;
+  text-shadow:0 0 18px rgba(var(--lm-rgb3),.45);
+}
+body.skin-lumen .now .artist{
+  font-size:11px; color:rgba(var(--lm-txt),.40); letter-spacing:2.4px; margin-top:3px;
+  text-transform:uppercase;
+}
+
+body.skin-lumen .controls{
+  position:absolute; right:34px; top:50%; transform:translateY(-50%);
+  flex-direction:column; gap:11px; pointer-events:auto;
+}
+body.skin-lumen .ctrl{
+  width:50px; height:50px; border-radius:50%;
+  background:radial-gradient(circle at 50% 45%, rgba(var(--lm-rgb),.10), rgba(var(--lm-rgb),.02) 74%);
+  border:1px solid rgba(var(--lm-rgb),.22);
+  color:rgba(var(--lm-txt),.82);
+  box-shadow:0 0 22px rgba(var(--lm-rgb),.10), inset 0 0 18px rgba(var(--lm-rgb),.05);
+  transition:background .18s, border-color .18s, box-shadow .18s, color .18s;
+}
+body.skin-lumen .ctrl:hover{
+  background:radial-gradient(circle at 50% 45%, rgba(var(--lm-rgb),.24), rgba(var(--lm-rgb),.06) 76%);
+  border-color:rgba(var(--lm-rgb),.62); color:var(--lm-hi);
+  box-shadow:0 0 32px rgba(var(--lm-rgb),.38), inset 0 0 22px rgba(var(--lm-rgb),.16);
+}
+body.skin-lumen .ctrl.play{
+  width:62px; height:62px;
+  background:radial-gradient(circle at 50% 42%, rgba(var(--lm-rgb3),.30), rgba(var(--lm-rgb2),.10) 72%);
+  border:1px solid rgba(var(--lm-rgb),.55); color:var(--lm-hi);
+  box-shadow:0 0 38px rgba(var(--lm-rgb),.46), inset 0 0 26px rgba(var(--lm-rgb),.22);
+}
+body.skin-lumen .ctrl.play:hover{box-shadow:0 0 48px rgba(var(--lm-rgb),.62), inset 0 0 28px rgba(var(--lm-rgb),.28)}
+body.skin-lumen .ctrl.karaoke-on,body.skin-lumen .ctrl.mode-on{
+  background:radial-gradient(circle at 50% 42%, rgba(var(--lm-rgb2),.30), rgba(var(--lm-rgb2),.08) 74%);
+  border-color:rgba(var(--lm-rgb2),.6); color:var(--lm-hi);
+  box-shadow:0 0 30px rgba(var(--lm-rgb2),.34), inset 0 0 20px rgba(var(--lm-rgb2),.16);
+}
+
+body.skin-lumen .progress{
+  position:absolute; left:124px; right:132px; bottom:0; width:auto; max-width:none;
+  height:56px; pointer-events:auto;
+}
+body.skin-lumen .times{
+  position:absolute; left:0; right:0; bottom:26px;
+  display:flex; justify-content:space-between;
+  font-size:10.5px; font-weight:600; letter-spacing:2px; color:rgba(var(--lm-txt),.38);
+}
+body.skin-lumen .bar{
+  position:absolute; left:0; right:0; bottom:10px; height:3px; border-radius:0;
+  background:rgba(var(--lm-rgb),.14); overflow:visible;
+}
+body.skin-lumen .bar .fill{
+  border-radius:0;
+  background:linear-gradient(90deg, rgba(var(--lm-rgb2),.85), var(--lm-accent));
+  box-shadow:0 0 16px rgba(var(--lm-rgb),.8), 0 0 4px rgba(var(--lm-rgb3),.95);
+}
+body.skin-lumen .bar .knob{
+  width:9px; height:9px; border-radius:50%; background:#fff;
+  box-shadow:0 0 18px rgba(var(--lm-rgb3),.95), 0 0 5px #fff;
+}
+body.skin-lumen .vol-row{
+  position:absolute; left:28px; bottom:24px; width:84px; max-width:none;
+  gap:9px; pointer-events:auto; opacity:.75;
+}
+body.skin-lumen .vol-row:hover{opacity:1}
+body.skin-lumen .vol-ico{color:rgba(var(--lm-txt),.55)}
+body.skin-lumen .vol-bar{height:2px; background:rgba(var(--lm-rgb),.14); border-radius:0}
+body.skin-lumen .vol-bar .fill{
+  background:var(--lm-accent); border-radius:0; box-shadow:0 0 12px rgba(var(--lm-rgb),.75);
+}
+body.skin-lumen .vol-bar .knob{width:7px; height:7px; background:#fff; box-shadow:0 0 12px rgba(var(--lm-rgb),.9)}
+
+/* —— 顶栏：去边框，只靠字发光 —— */
+body.skin-lumen header{
+  background:transparent; backdrop-filter:none; border-bottom:none; height:54px;
+  position:relative; z-index:50;
+}
+body.skin-lumen header .brand{font-weight:600; letter-spacing:2px; color:rgba(var(--lm-txt),.72)}
+body.skin-lumen header .brand .dot{
+  background:var(--lm-accent); box-shadow:0 0 14px rgba(var(--lm-rgb),.95), 0 0 30px rgba(var(--lm-rgb),.45);
+}
+body.skin-lumen .tab{background:none; border:none; color:rgba(var(--lm-txt),.34); letter-spacing:2px; font-size:12px}
+body.skin-lumen .tab.active{
+  background:none; color:var(--lm-accent); text-shadow:0 0 18px rgba(var(--lm-rgb),.75), 0 0 40px rgba(var(--lm-rgb),.35);
+}
+body.skin-lumen .searchbox input{
+  background:rgba(var(--lm-rgb),.045); border:1px solid rgba(var(--lm-rgb),.14);
+  border-radius:0; color:var(--lm-ink);
+}
+body.skin-lumen .searchbox input:focus{border-color:rgba(var(--lm-rgb),.5); box-shadow:0 0 22px rgba(var(--lm-rgb),.20)}
+body.skin-lumen .btn-theme,body.skin-lumen .btn-logout{
+  background:transparent; border:1px solid rgba(var(--lm-rgb),.16); border-radius:0;
+  color:rgba(var(--lm-txt),.55); box-shadow:none; transition:.18s;
+}
+body.skin-lumen .btn-theme:hover{color:var(--lm-accent); border-color:rgba(var(--lm-rgb),.55); box-shadow:0 0 22px rgba(var(--lm-rgb),.28)}
+body.skin-lumen .btn-logout:hover{color:#ff8a7a; border-color:rgba(255,138,122,.55); box-shadow:0 0 22px rgba(255,138,122,.24)}
+body.skin-lumen .user-chip{color:rgba(var(--lm-txt),.6); letter-spacing:1px}
+body.skin-lumen .user-chip .avatar{
+  background:transparent; border:1px solid rgba(var(--lm-rgb),.42); color:var(--lm-accent);
+  box-shadow:0 0 20px rgba(var(--lm-rgb),.28), inset 0 0 12px rgba(var(--lm-rgb),.14);
+}
+
+/* —— 登录页：只有一束光，没有卡片边框 —— */
+body.skin-lumen .login-card{
+  background:rgba(0,0,0,.42); backdrop-filter:none;
+  border:1px solid rgba(var(--lm-rgb),.13); border-radius:0;
+  box-shadow:0 0 120px rgba(var(--lm-rgb),.14), inset 0 0 70px rgba(var(--lm-rgb),.045);
+}
+body.skin-lumen .logo .disc{
+  background:radial-gradient(circle at 50% 45%, #ffcf8a, #ff9c3d 62%, #c96a10);
+  border:none; box-shadow:0 0 34px rgba(var(--lm-rgb),.75), 0 0 78px rgba(255,150,60,.35);
+}
+body.skin-lumen .logo .disc::after{background:#000; box-shadow:inset 0 0 8px rgba(var(--lm-rgb),.4)}
+body.skin-lumen .logo h1{font-weight:600; letter-spacing:3px; color:var(--lm-ink); text-shadow:0 0 22px rgba(var(--lm-rgb3),.4)}
+body.skin-lumen .logo h1 small{color:rgba(var(--lm-txt),.34); letter-spacing:3px}
+body.skin-lumen .field label{
+  color:rgba(var(--lm-txt),.36); letter-spacing:2px; font-weight:600; font-size:10.5px;
+}
+body.skin-lumen .field input{
+  background:rgba(var(--lm-rgb),.035); border:none; border-bottom:1px solid rgba(var(--lm-rgb),.26);
+  border-radius:0; color:var(--lm-ink);
+}
+body.skin-lumen .field input:focus{
+  outline:none; border-bottom-color:var(--lm-accent);
+  box-shadow:0 1px 16px rgba(var(--lm-rgb),.42), 0 0 34px rgba(var(--lm-rgb),.14);
+}
+body.skin-lumen .btn-login{
+  background:linear-gradient(180deg, rgba(var(--lm-rgb3),.20), rgba(var(--lm-rgb2),.10));
+  color:var(--lm-hi); border:1px solid rgba(var(--lm-rgb),.45); border-radius:0;
+  font-weight:600; letter-spacing:5px;
+  box-shadow:0 0 34px rgba(var(--lm-rgb),.26), inset 0 0 24px rgba(var(--lm-rgb),.10);
+  transition:.2s;
+}
+body.skin-lumen .btn-login:hover{
+  background:linear-gradient(180deg, rgba(var(--lm-rgb3),.30), rgba(var(--lm-rgb2),.16));
+  box-shadow:0 0 46px rgba(var(--lm-rgb),.44), inset 0 0 26px rgba(var(--lm-rgb),.16);
+}
+body.skin-lumen .login-tip{color:rgba(var(--lm-txt),.30); line-height:1.9}
+
+/* —— 曲库页 —— */
+body.skin-lumen .list-wrap{background:transparent; border:none; border-radius:0; box-shadow:none; backdrop-filter:none}
+body.skin-lumen .row{border-radius:0; border-bottom:1px solid rgba(var(--lm-rgb),.06)}
+body.skin-lumen .row:hover{background:rgba(var(--lm-rgb),.05)}
+body.skin-lumen .row .cov{background:rgba(var(--lm-rgb),.06); border:none; border-radius:0; color:rgba(var(--lm-rgb),.4)}
+body.skin-lumen .row .meta .t{color:rgba(var(--lm-txt),.86)}
+body.skin-lumen .row .meta .a{color:rgba(var(--lm-txt),.34)}
+body.skin-lumen .row.playing .meta .t{color:var(--lm-accent); text-shadow:0 0 16px rgba(var(--lm-rgb),.6)}
+body.skin-lumen .row .eq{color:var(--lm-accent)}
+body.skin-lumen .card{
+  background:rgba(var(--lm-rgb),.04); border:1px solid rgba(var(--lm-rgb),.10); border-radius:0;
+  box-shadow:none; transition:.2s;
+}
+body.skin-lumen .card:hover{border-color:rgba(var(--lm-rgb),.34); box-shadow:0 0 26px rgba(var(--lm-rgb),.16)}
+body.skin-lumen .card .cover{background:rgba(var(--lm-rgb),.05); border-radius:0}
+body.skin-lumen .card .name{color:rgba(var(--lm-txt),.82)}
+body.skin-lumen #toast{
+  background:rgba(10,6,2,.94); color:#ffd7a8; border:1px solid rgba(var(--lm-rgb),.4); border-radius:0;
+  box-shadow:0 0 36px rgba(var(--lm-rgb),.28); letter-spacing:2px;
+}
+body.skin-lumen ::-webkit-scrollbar{width:6px}
+body.skin-lumen ::-webkit-scrollbar-thumb{background:rgba(var(--lm-rgb),.30); border-radius:0; border:none}
+
+/* 面板跟随皮肤：像素 / 黏土 / 瑞士 */
+body.skin-pixel .look-menu{
+  background:#08120d; border:2px solid #39ff88; border-radius:0;
+  box-shadow:6px 6px 0 rgba(0,0,0,.6), 0 0 26px rgba(57,255,136,.22);
+}
+body.skin-pixel .look-item{border-radius:0; font-weight:700; color:#79c79b}
+body.skin-pixel .look-item:hover{background:rgba(57,255,136,.12); color:#39ff88}
+body.skin-pixel .look-item.on{background:rgba(57,255,136,.16); color:#39ff88}
+body.skin-pixel .look-item .sw{border:2px solid #2c6b4a; border-radius:0}
+body.skin-clay .look-menu{
+  background:#eef2fc; border:none; border-radius:24px;
+  box-shadow:0 22px 44px rgba(88,102,150,.28), inset 0 6px 12px rgba(255,255,255,.95), inset 0 -6px 12px rgba(88,102,150,.12);
+}
+body.skin-clay .look-item{border-radius:16px; font-weight:700; color:#6c7296}
+body.skin-clay .look-item:hover{background:#eef2fc; color:#7c5cff; box-shadow:inset 3px 3px 7px rgba(122,136,182,.20), inset -3px -3px 7px #fff}
+body.skin-clay .look-item.on{background:#eef2fc; color:#7c5cff; box-shadow:inset 3px 3px 7px rgba(122,136,182,.24), inset -3px -3px 7px #fff}
+body.skin-clay .look-item .sw{border:none; border-radius:10px; box-shadow:inset 0 2px 4px rgba(255,255,255,.7)}
+body.skin-swiss .look-menu{
+  background:#fff; border:1px solid #111; border-radius:0; box-shadow:6px 6px 0 rgba(0,0,0,.9);
+}
+body.skin-swiss .look-item{border-radius:0; font-weight:600; color:#0a0a0a; letter-spacing:.02em}
+body.skin-swiss .look-item:hover{background:#f4f4f4}
+body.skin-swiss .look-item.on{background:#111; color:#fff}
+body.skin-swiss .look-item .sw{border:1px solid #111; border-radius:0}
+
+/* 磁带跟随皮肤：只覆盖"壳"，光影/比例不动 */
+body.skin-brutal .tape-shell{border-width:3px; border-radius:8px; box-shadow:6px 6px 0 #0a0a0a}
+body.skin-brutal .tape-face{border-width:3px; border-radius:2px}
+body.skin-brutal .tape-label{border-radius:2px; background:#0a0a0a; backdrop-filter:none; -webkit-backdrop-filter:none}
+body.skin-brutal .tape-label .side{color:#ffe066}
+body.skin-brutal .tape-window{border:3px solid #0a0a0a; box-shadow:inset 0 0 0 1px #fff; border-radius:2px}
+body.skin-pixel .tape-shell{border:2px solid #39ff88; border-radius:0; box-shadow:6px 6px 0 rgba(0,0,0,.6)}
+body.skin-pixel .tape-face{border:2px solid #39ff88; border-radius:0}
+body.skin-pixel .tape-label{border:1px solid #39ff88; border-radius:0; background:#04160e; backdrop-filter:none; -webkit-backdrop-filter:none}
+body.skin-pixel .tape-label .side{color:#39ff88}
+body.skin-pixel .tape-label .ttl{color:#b9ffd4}
+body.skin-pixel .tape-window{border:2px solid #2c6b4a; border-radius:0}
+body.skin-swiss .tape-shell{background:#fff; border:1px solid #111; border-radius:0; box-shadow:none}
+body.skin-swiss .tape-face{border:1px solid #111; border-radius:0}
+body.skin-swiss .tape-label{background:#fff; border:1px solid #111; border-radius:0; backdrop-filter:none; -webkit-backdrop-filter:none}
+body.skin-swiss .tape-label .side{color:#111}
+body.skin-swiss .tape-label .ttl{color:#111}
+body.skin-swiss .tape-window{background:#111; border:1px solid #111; border-radius:0; box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+body.skin-neumorph .tape-shell{background:#e3e8ef; border:none; border-radius:20px; box-shadow:10px 10px 22px #c2c9d4, -10px -10px 22px #fff}
+body.skin-neumorph .tape-face{border:none; border-radius:12px; box-shadow:inset 0 0 0 1px rgba(255,255,255,.5)}
+body.skin-neumorph .tape-label{background:#e9edf4; border:none; border-radius:8px; box-shadow:inset 3px 3px 6px #c2c9d4, inset -3px -3px 6px #fff}
+body.skin-neumorph .tape-label .ttl{color:#5a6472}
+body.skin-neumorph .tape-window{background:linear-gradient(180deg, rgba(46,54,70,.72), rgba(26,32,44,.80)); border:none; border-radius:10px; box-shadow:inset 4px 4px 10px rgba(0,0,0,.55), inset -3px -3px 8px rgba(255,255,255,.10)}
+body.skin-clay .tape-shell{border:none; border-radius:20px; box-shadow:0 16px 30px rgba(88,102,150,.22), inset 0 5px 10px rgba(255,255,255,.9)}
+body.skin-clay .tape-face{border:none; border-radius:12px}
+body.skin-clay .tape-label{border:none; border-radius:9px; background:#fbfbff; box-shadow:0 2px 8px rgba(88,102,150,.25)}
+body.skin-clay .tape-label .side{color:#4a5a86}
+body.skin-clay .tape-label .ttl{color:#4a5a86}
+body.skin-clay .tape-window{border:none; border-radius:10px; background:linear-gradient(180deg,#4d5474,#2c3155); box-shadow:inset 2px 3px 8px rgba(0,0,0,.45), inset 0 -1px 0 rgba(255,255,255,.14)}
+/* ==================================================================
+   三色霓虹（黑底）：字=深黄 / 框=深蓝 / 键=深红
+   —— 单色灯箱在黑底上只有一层明暗；三色并置才够扎眼，
+      也最像真透明屏里塞了三根不同颜色的灯管
+   ================================================================== */
+body.skin-lumen[data-lmtri]{
+  background-image:
+    radial-gradient(76% 42% at 50% 108%, rgba(255,34,51,.16), transparent 72%),
+    radial-gradient(52% 44% at 50% 42%, rgba(47,107,255,.12), transparent 74%),
+    linear-gradient(180deg,#04040a 0%,#000 46%,#020103 100%);
+}
+body.skin-lumen[data-lmtri] .ctrl{
+  border-color:rgba(47,107,255,.62);
+  box-shadow:0 0 22px rgba(47,107,255,.18), inset 0 0 18px rgba(47,107,255,.10);
+  color:#ffd21a;
+}
+body.skin-lumen[data-lmtri] .ctrl:hover{
+  border-color:#3f79ff; color:#fff3b0;
+  box-shadow:0 0 32px rgba(47,107,255,.45), inset 0 0 22px rgba(47,107,255,.22);
+}
+body.skin-lumen[data-lmtri] .ctrl.play{
+  background:radial-gradient(circle at 50% 42%, rgba(255,34,51,.46), rgba(255,34,51,.10) 74%);
+  border:1px solid rgba(255,34,51,.85); color:#fff;
+  box-shadow:0 0 44px rgba(255,34,51,.60), inset 0 0 28px rgba(255,34,51,.34);
+}
+body.skin-lumen[data-lmtri] .ctrl.play:hover{
+  box-shadow:0 0 56px rgba(255,34,51,.78), inset 0 0 30px rgba(255,34,51,.40);
+}
+body.skin-lumen[data-lmtri] .ctrl.karaoke-on,
+body.skin-lumen[data-lmtri] .ctrl.mode-on{
+  background:radial-gradient(circle at 50% 42%, rgba(255,196,26,.30), rgba(255,196,26,.06) 74%);
+  border-color:rgba(255,196,26,.75); color:#ffd21a;
+  box-shadow:0 0 30px rgba(255,196,26,.40), inset 0 0 20px rgba(255,196,26,.18);
+}
+body.skin-lumen[data-lmtri] .bar{background:rgba(47,107,255,.20); border-bottom:1px solid rgba(47,107,255,.45)}
+body.skin-lumen[data-lmtri] .bar .fill{
+  background:linear-gradient(90deg, rgba(255,34,51,.55), #ff2233);
+  box-shadow:0 0 18px rgba(255,34,51,.85), 0 0 5px #ff5566;
+}
+body.skin-lumen[data-lmtri] .bar .knob{background:#ff2233; box-shadow:0 0 20px rgba(255,34,51,.95)}
+body.skin-lumen[data-lmtri] .vol-bar{background:rgba(47,107,255,.22)}
+body.skin-lumen[data-lmtri] .vol-bar .fill{background:#ff2233; box-shadow:0 0 12px rgba(255,34,51,.85)}
+body.skin-lumen[data-lmtri] .vol-bar .knob{background:#ff2233; box-shadow:0 0 12px rgba(255,34,51,.9)}
+body.skin-lumen[data-lmtri] .lyric-line{color:rgba(255,214,92,.34)}
+body.skin-lumen[data-lmtri] .lyric-line.active{
+  color:#ffd21a;
+  text-shadow:0 0 20px rgba(255,196,26,.70), 0 0 46px rgba(255,120,20,.34), 0 0 82px rgba(255,80,20,.16);
+}
+body.skin-lumen[data-lmtri] .now{border-color:rgba(47,107,255,.62); box-shadow:0 0 28px rgba(47,107,255,.22), inset 0 0 22px rgba(47,107,255,.06)}
+body.skin-lumen[data-lmtri] .now .title{color:#ffd21a; text-shadow:0 0 18px rgba(255,196,26,.55)}
+body.skin-lumen[data-lmtri] .times{color:rgba(255,214,92,.55)}
+body.skin-lumen[data-lmtri] .searchbox input{border-color:rgba(47,107,255,.40)}
+body.skin-lumen[data-lmtri] .searchbox input:focus{border-color:rgba(47,107,255,.8); box-shadow:0 0 24px rgba(47,107,255,.28)}
+body.skin-lumen[data-lmtri] .btn-theme,
+body.skin-lumen[data-lmtri] .btn-logout{border-color:rgba(47,107,255,.45); color:#ffd21a}
+body.skin-lumen[data-lmtri] header .brand{color:#ffd21a}
+body.skin-lumen[data-lmtri] header .brand .dot{background:#ff2233; box-shadow:0 0 14px rgba(255,34,51,.95), 0 0 30px rgba(255,34,51,.45)}
+body.skin-lumen[data-lmtri] .tab.active{color:#ffd21a; text-shadow:0 0 16px rgba(255,196,26,.6); border-color:#2f6bff}
+body.skin-lumen[data-lmtri] .lm-dot.on{box-shadow:0 0 0 2px #ffd21a, 0 0 14px rgba(255,196,26,.7)}
+
+/* ==================================================================
+   竖屏布局 —— 窗口宽 ≤ 高 时自动生效，无需手动切换
+   ---------------------------------------------------------------
+   横屏是「左歌词 + 右播放器」两栏；竖屏塞不下，改成自上而下：
+       封面 → 歌名 → 歌词 → 播放键 → 进度条 → 音量
+   不是把横屏压扁：整页改成绝对定位、按百分比分配纵向空间，
+   皮肤的颜色/材质仍由各自 body.skin-* 变量控制，所以 7 套自动成立。
+   选择器统一加 #player 提高特异性，压过各皮肤的横屏定位。
+   ================================================================== */
+@media (max-aspect-ratio:1/1){
+
+  /* —— 顶栏收紧：让副标题和用户名给搜索框让位 —— */
+  .brand-sub{display:none}
+  #username{display:none}
+  header{gap:10px !important; padding:0 14px !important}
+  header .spacer{display:none}
+  .searchbox{flex:1; min-width:0}
+  .searchbox input{width:100%}
+
+  /* —— 播放页：整页重排 —— */
+  #player{
+    position:relative; display:block; padding:0; overflow:hidden;
+    /* 磁带宽度：手机竖屏按宽度走；竖屏大屏（把笔记本转过来）按高度走，
+       否则 1080 宽的屏上它只占三分之一，整页看着散架 */
+    --vp-tape:clamp(250px, 78vw, min(560px, 36vh));
+    --vp-fig:calc(var(--vp-tape)/1.66);        /* 磁带本体高度（封面不再是外挂卡片） */
+  }
+  /* 两个栏容器退成透明定位层；皮肤的卡片外观交给里面的元素自己带 */
+  #player .col-player,
+  #player .player-box{
+    position:absolute; inset:0; display:block;
+    background:none !important; border:none !important; border-radius:0 !important;
+    box-shadow:none !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
+    padding:0; pointer-events:none;
+  }
+  #player .viz-row{display:none}
+
+  /* 竖屏不出转盘/封面，换成磁带：封面就贴在磁带正面，中间挖窗露盘
+     （竖屏本来就没地方放圆形转盘，磁带是横宽的，正好填住顶部这条横带） */
+  #player .vinyl,
+  #player .cover-card{display:none !important}
+  #player .view-switch{display:none}
+  #player .cassette{
+    display:block; position:absolute; left:50%; top:2%; transform:translateX(-50%);
+    width:var(--vp-tape); pointer-events:none;
+  }
+
+  /* 歌名：紧跟磁带 */
+  #player .now{
+    position:absolute; left:6%; right:6%; top:calc(2% + var(--vp-fig) + 10px);
+    max-width:none; text-align:center;
+  }
+
+  /* 歌词：中间主区块，上下都要留白 */
+  #player .col-lyric{
+    position:absolute; left:5%; right:5%;
+    top:calc(2% + var(--vp-fig) + 78px); bottom:25%;
+    display:flex; flex-direction:column; z-index:2;
+  }
+  #player #lyricPanel{
+    background:none !important; border:none !important; border-radius:0 !important;
+    box-shadow:none !important; backdrop-filter:none !important;
+    padding:0; width:100%;
+  }
+  #player #lyricPanel .wave-tag{display:none}
+  /* 以前是 top:-8px，被面板的 overflow:hidden 削掉上半截，按钮点不着也看不清 */
+  #player .lyric-tools{top:0; right:0}
+
+  /* 播放键：横排一条，居中 */
+  #player .controls{
+    position:absolute; left:0; right:0; bottom:17%;
+    display:flex; flex-direction:row; align-items:center; justify-content:center;
+    gap:12px; transform:none; pointer-events:auto;
+  }
+
+  /* 进度条张满宽度、贴底上方 */
+  #player .progress{
+    position:absolute; left:7%; right:7%; bottom:8%;
+    width:auto; max-width:none; margin:0; pointer-events:auto;
+  }
+  #player .times{font-size:11px}
+
+  /* 音量：跟进度条一样左右贴到 7%，条长完全等齐
+     （喇叭图标挪进左边 7% 的留白里，不占条的长度） */
+  #player .vol-row{
+    position:absolute; left:7%; right:7%; bottom:2.2%; width:auto; max-width:none;
+    display:block; height:8px; pointer-events:auto;
+  }
+  #player .vol-row .vol-ico{
+    position:absolute; right:calc(100% + 8px); top:50%; transform:translateY(-50%);
+    width:15px; height:15px;
+  }
+  #player .vol-bar{position:absolute; left:0; right:0; top:1px; height:6px}
+
+  /* —— 灯箱竖屏：顶部一块小铭牌（歌名），歌词从顶上铺下来
+     以前 .now 在底部、歌词从 6% 才开始居中，上面一大块纯黑什么都看不见 —— */
+  body.skin-lumen #lmVu{display:none}
+  body.skin-lumen #lmBars{
+    left:7%; width:86%; bottom:15%; height:20px;
+  }
+  body.skin-lumen #player .now{
+    top:1.8%; bottom:auto; left:50%; right:auto; transform:translateX(-50%);
+    max-width:86%; padding:5px 16px 6px;
+    border:1px solid rgba(var(--lm-edge),.52); border-radius:2px;
+    background:rgba(0,0,0,.72);
+    box-shadow:0 0 26px rgba(var(--lm-edge),.16), inset 0 0 22px rgba(var(--lm-edge),.05);
+  }
+  body.skin-lumen #player .now .title{
+    font-size:15px; letter-spacing:1.2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  body.skin-lumen #player .now .artist{display:none}
+  /* 歌词从顶上铺满，只让开铭牌那一条 */
+  body.skin-lumen #player .col-lyric{top:0; bottom:33%; padding-top:52px}
+  body.skin-lumen #player .lyric-line{font-size:calc(var(--lyric-size,28px)*.72)}
+  body.skin-lumen #player .controls{bottom:26%; top:auto; transform:none}
+  body.skin-lumen #player .vol-row{left:7%; right:7%; bottom:2.2%; width:auto}
+
+  /* —— 曲库页竖屏 —— */
+  #library{padding:10px 12px; gap:10px}
+  .lib-tabs{flex-wrap:wrap; gap:6px}
+  .lib-tabs .tab{padding:7px 12px}
+  .list-wrap{padding:6px; border-radius:12px}
+  .row{gap:10px; padding:9px 10px}
+  .row .idx{width:22px; font-size:12px}
+  .row .cov{width:38px; height:38px}
+  .row .meta .t{font-size:14px}
+}
+
+/* 宽竖屏（>560，含转过来的笔记本 / 竖屏大屏）：字号跟着高度长，
+   不然 1920 高的屏上还是 20px，字小得像缩略图 */
+@media (max-aspect-ratio:1/1) and (min-width:561px){
+  #player .lyric-line,
+  body.skin-lumen #player .lyric-line{font-size:calc(var(--lyric-size,28px)*.72 + 1.15vh)}
+}
+
+/* ------------------------------------------------------------------
+   窄竖屏（宽度 < 820）：顶栏一行放不下，拆两行
+   第一行：品牌 + 全屏/外观/头像/退出；第二行：曲库切换 + 搜索框
+   ------------------------------------------------------------------ */
+@media (max-aspect-ratio:1/1) and (max-width:820px){
+  header{flex-wrap:wrap; height:auto !important; padding:7px 12px !important; row-gap:7px}
+  /* 窄屏顶栏占两行，磁带让出一点高度，但仍按宽/高双约束，别写死 */
+  #player{--vp-tape:min(70vw,32vh)}
+  header .brand{white-space:nowrap; font-size:14px; flex:none; margin-right:auto}
+  header .spacer{display:none}
+  #btn-fs,.look-wrap,.user-chip,.btn-logout{flex:none}
+  /* 这一条是"第二行的字面换行"：伪元素占满整行高度为 0，
+     它后面的元素必然落到新的一行（否则曲库切换会跟按钮挤在第一行右侧） */
+  header::after{content:""; order:8; flex:0 0 100%; height:0}
+  .tabs{order:9; flex:none; margin-left:0}
+  .tab{padding:7px 11px; white-space:nowrap}
+  .btn-logout{padding:7px 11px; white-space:nowrap}
+  .searchbox{order:10; flex:1 1 auto; width:auto; min-width:0}
+  #player .lyric-line{font-size:calc(var(--lyric-size,28px)*.72)}
+}
+
+/* ============================================================
+   蓝牙音箱（右侧抽屉）
+   ============================================================ */
+#btn-bt.on{color:var(--accent); border-color:var(--stroke-strong); box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 26%,transparent)}
+#bt-panel{
+  position:fixed; top:0; right:0; height:100%; width:min(432px,93vw); z-index:70;
+  display:flex; flex-direction:column;
+  background:var(--glass-strong); border-left:1px solid var(--stroke);
+  backdrop-filter:blur(24px) saturate(1.15);
+  box-shadow:-30px 0 70px rgba(0,0,0,.5);
+  transform:translateX(104%); transition:transform .34s cubic-bezier(.4,0,.2,1);
+}
+#bt-panel.open{transform:none}
+.cp-head{display:flex; align-items:center; gap:10px; padding:15px 18px; border-bottom:1px solid var(--stroke); flex:none}
+.cp-head h3{font-size:15px; font-weight:700; letter-spacing:.02em}
+.cp-head .badge{font-size:11px; padding:2px 8px; border-radius:999px; background:var(--accent); color:var(--bg-0); font-weight:700; display:none}
+.cp-head .badge.on{display:inline-block}
+.cp-close{margin-left:auto; width:30px; height:30px; border-radius:9px; color:var(--txt-dim); font-size:16px}
+.cp-close:hover{background:var(--glass); color:var(--txt)}
+.cp-body{flex:1; overflow-y:auto; overscroll-behavior:contain}
+.cp-sec{padding:15px 18px; border-bottom:1px solid var(--stroke)}
+.cp-cap{font-size:11.5px; letter-spacing:.1em; color:var(--txt-faint); margin-bottom:9px; display:flex; align-items:center; gap:7px}
+.cp-cap i{width:6px; height:6px; border-radius:50%; background:var(--accent); display:inline-block; font-style:normal}
+.cp-cap em{margin-left:auto; font-style:normal; letter-spacing:0; font-size:11px; color:var(--txt-faint)}
+.cp-row{display:flex; gap:8px; align-items:center; min-width:0}
+.cp-btn{
+  font-size:13px; padding:9px 14px; border-radius:10px; border:1px solid var(--stroke);
+  background:var(--glass); color:var(--txt); transition:background .18s,border-color .18s,color .18s; white-space:nowrap;
+  flex:0 0 auto;
+}
+.cp-btn:hover{background:var(--glass-strong); border-color:var(--stroke-strong)}
+.cp-btn.primary{background:var(--accent); color:var(--bg-0); border-color:transparent; font-weight:700}
+.cp-btn.primary:hover{filter:brightness(1.08)}
+.cp-btn.danger{color:var(--danger); border-color:color-mix(in srgb,var(--danger) 40%,transparent)}
+.cp-btn:disabled{opacity:.45; cursor:not-allowed}
+.cp-btn.sm{font-size:12px; padding:6px 10px; border-radius:8px}
+.cp-hint{font-size:11.5px; line-height:1.6; color:var(--txt-dim); margin-top:8px}
+.cp-hint b{color:var(--txt); font-weight:600}
+.cp-switch{display:flex; align-items:center; gap:9px; padding:7px 0; font-size:12.5px; color:var(--txt)}
+.cp-switch input{appearance:none; width:34px; height:19px; border-radius:999px; background:var(--stroke); position:relative; cursor:pointer; flex:none; transition:background .2s}
+.cp-switch input::after{content:""; position:absolute; top:2px; left:2px; width:15px; height:15px; border-radius:50%; background:#fff; transition:transform .2s}
+.cp-switch input:checked{background:var(--accent)}
+.cp-switch input:checked::after{transform:translateX(15px)}
+.cp-status{font-size:11.5px; color:var(--txt-dim); margin-top:6px; line-height:1.6; min-height:16px}
+.cp-status.ok{color:var(--accent)}
+.cp-status.err{color:var(--danger)}
+
+</style>
+</head>
+<body>
+
+<!-- 登录 -->
+<div id="login">
+  <div class="login-card">
+    <div class="logo"><div class="disc"></div>
+      <h1>飞牛音乐<small>FN MUSIC DESKTOP</small></h1>
+    </div>
+    <div class="field"><label>飞牛 NAS 地址</label>
+      <input id="in-base" placeholder="如 192.168.1.10:5666 或 https://music.example.com" spellcheck="false"/>
+    </div>
+    <div class="field"><label>飞牛音乐账号</label>
+      <input id="in-user" placeholder="你的飞牛系统账号" autocomplete="off" spellcheck="false"/>
+    </div>
+    <div class="field"><label>密码</label>
+      <input id="in-pass" type="password" placeholder="和飞牛系统/SSH 密码一致" autocomplete="off"/>
+    </div>
+    <div class="field"><label>访问码（可选，NAS 开启访问码保护时才填）</label>
+      <input id="in-code" placeholder="留空即可" autocomplete="off"/>
+    </div>
+    <button class="btn-login" id="btn-login">连接并登录</button>
+    <div class="login-err" id="login-err"></div>
+    <div class="login-tip">账号密码与飞牛系统登录一致。用域名访问时请完整填写协议，例如 https://music.example.com；不写协议默认按 http 80 端口处理。</div>
+  </div>
+</div>
+
+<!-- 主界面 -->
+<div id="app">
+  <header>
+    <div class="brand"><span class="dot"></span>飞牛音乐<span class="brand-sub"> · 桌面播放器</span></div>
+    <div class="tabs">
+      <button class="tab active" data-view="player">播放器</button>
+      <button class="tab" data-view="library">曲库</button>
+    </div>
+    <div class="spacer"></div>
+    <!-- 蓝牙音箱：把歌名/歌手/封面（可选当前歌词句）发到系统媒体会话 -->
+    <button class="btn-theme" id="btn-bt" title="蓝牙音箱（Ctrl+Shift+B）">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M7 7.5 17 16.5 12 20V4l5 3.5L7 16.5"/>
+      </svg>
+    </button>
+    <!-- 全屏：触屏没有 F11，给个能点的入口；全屏后图标变四角向内 -->
+    <button class="btn-theme" id="btn-fs" title="全屏 / 退出全屏（F11）">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 9V4h5"/><path d="M20 9V4h-5"/><path d="M4 15v5h5"/><path d="M20 15v5h-5"/>
+      </svg>
+    </button>
+    <div class="look-wrap">
+      <button class="btn-theme" id="btn-theme" title="切换外观">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3a9 9 0 0 0 0 18h1.6a2.4 2.4 0 0 0 0-4.8h-1.2a2 2 0 0 1 0-4h5.1A3.5 3.5 0 0 0 21 8.7C21 5.3 16.9 3 12 3Z"/>
+          <circle cx="8.4" cy="9" r="1.05" fill="currentColor" stroke="none"/>
+          <circle cx="13" cy="7.2" r="1.05" fill="currentColor" stroke="none"/>
+          <circle cx="17.2" cy="9.6" r="1.05" fill="currentColor" stroke="none"/>
+        </svg>
+      </button>
+      <div class="look-menu" id="look-menu"></div>
+    </div>
+    <div class="searchbox"><input id="in-search" placeholder="搜索歌曲 / 专辑 / 歌手 / 歌单" spellcheck="false"/></div>
+    <div class="user-chip"><span class="avatar" id="avatar">F</span><span id="username"></span></div>
+    <button class="btn-logout" id="btn-logout">退出</button>
+  </header>
+
+  <main>
+    <!-- 播放器 -->
+    <section id="player">
+      <!-- 灯箱皮肤专用画布：左侧竖音柱 + 底部小柱群；其余皮肤一律不显示 -->
+      <canvas id="lmVu"></canvas>
+      <canvas id="lmBars"></canvas>
+      <div class="col-lyric">
+        <div class="panel" id="lyricPanel"><span class="wave-tag">歌词</span><div class="lyric-tools"><button id="lyric-smaller" title="减小歌词字号">A−</button><button id="lyric-bigger" title="增大歌词字号">A＋</button></div><div id="lyrics"><div class="lyric-centerline"></div><div id="lyricInner"><div class="lyric-line no-lyric">暂无歌词</div></div></div></div>
+      </div>
+      <div class="col-player">
+        <div class="viz-row">
+          <div class="viz" id="peakPanel"><canvas id="peaks"></canvas></div>
+          <div class="viz" id="wavePanel"><canvas id="wave"></canvas></div>
+          <div class="viz" id="specPanel"><canvas id="spec"></canvas></div>
+        </div>
+        <div class="player-box">
+          <button class="view-switch" id="btn-view" title="切换封面 / 转盘模式">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8">
+              <rect x="3.5" y="4.5" width="17" height="15" rx="3"/>
+              <circle cx="9" cy="10" r="1.9"/>
+              <path d="M4 17.2l4.6-4.4 3.6 3.4 3-2.8 4.3 4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <div class="vinyl paused" id="vinyl">
+            <div class="disc"></div>
+            <div class="cover"><div class="ph" id="cover-ph">♪</div><img id="cover-img" alt="" style="display:none"/></div>
+            <div class="hole"></div>
+          </div>
+          <div class="cover-card" id="coverCard" style="display:none">
+            <div class="ph" id="cover-card-ph">♪</div><img id="cover-card-img" alt="" style="display:none"/>
+          </div>
+          <!-- 竖屏专用：磁带模式（横屏隐藏，由媒体查询切） -->
+          <div class="cassette paused" id="cassette">
+            <div class="tape-shell">
+              <div class="tape-face"><span class="ph" id="tape-ph">♪</span><img id="tape-img" alt="" style="display:none"/></div>
+              <div class="tape-window">
+                <div class="tape-band"></div>
+                <div class="reel"></div>
+                <div class="reel"></div>
+              </div>
+              <div class="tape-label"><span class="side">SIDE A</span><span class="ttl" id="tape-ttl">未在播放</span></div>
+            </div>
+          </div>
+          <div class="now">
+            <div class="title" id="np-title">暂无播放</div>
+            <div class="artist" id="np-artist">—</div>
+          </div>
+          <div class="controls">
+            <button class="ctrl" id="btn-mode" title="播放模式"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.2 3.2 20.6 6.4 17.2 9.6"/><path d="M20.6 6.4H7.8A4.2 4.2 0 0 0 3.6 10.6"/><path d="M6.8 20.8 3.4 17.6 6.8 14.4"/><path d="M3.4 17.6h12.8a4.2 4.2 0 0 0 4.2-4.2"/></svg></button>
+            <button class="ctrl" id="btn-prev" title="上一曲">⏮</button>
+            <button class="ctrl play" id="btn-play" title="播放/暂停">▶</button>
+            <button class="ctrl" id="btn-next" title="下一曲">⏭</button>
+            <button class="ctrl" id="btn-karaoke" title="消原声 / 只听伴奏"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9.2" y="2.6" width="5.6" height="10.6" rx="2.8"/><path d="M5.8 11.4a6.2 6.2 0 0 0 12.4 0"/><path d="M12 17.6v3.2"/><path d="M8.8 20.8h6.4"/></svg></button>
+          </div>
+          <div class="progress">
+            <div class="times"><span id="t-cur">0:00</span><span id="t-dur">0:00</span></div>
+            <div class="bar" id="bar"><div class="fill" id="bar-fill" style="width:0%"></div><div class="knob" id="bar-knob" style="left:0%"></div></div>
+          </div>
+          <div class="vol-row">
+            <span class="vol-ico" id="vol-ico" title="点击静音/恢复"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6.6 9H3.6v6h3L11 19V5Z"/><path d="M14.8 9.6a3.4 3.4 0 0 1 0 4.8"/><path d="M17.4 7a7 7 0 0 1 0 10"/></svg></span>
+            <div class="vol-bar" id="vol-bar"><div class="fill" id="vol-fill" style="width:100%"></div><div class="knob" id="vol-knob" style="left:100%"></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 曲库 -->
+    <section id="library">
+      <div class="lib-tabs">
+        <button class="tab active" data-lib="tracks">全部歌曲</button>
+        <button class="tab" data-lib="albums">专辑</button>
+        <button class="tab" data-lib="artists">歌手</button>
+        <button class="tab" data-lib="playlists">歌单</button>
+        <button class="tab" data-lib="favorites">收藏</button>
+      </div>
+      <div class="list-wrap" id="lib-content"></div>
+    </section>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<!-- ============ 蓝牙音箱面板 ============ -->
+<div id="bt-panel">
+  <div class="cp-head">
+    <h3>蓝牙音箱</h3>
+    <button class="cp-close" id="cp-close" title="关闭（Esc）">✕</button>
+  </div>
+  <div class="cp-body">
+    <div class="cp-sec">
+      <div class="cp-cap"><i></i>设备上屏内容</div>
+      <label class="cp-switch"><input type="checkbox" id="cp-bt-on"/><span>开启蓝牙元数据（歌名 / 歌手 / 封面发到设备）</span></label>
+      <label class="cp-switch"><input type="checkbox" id="cp-bt-lyric" checked/><span>歌词上屏：把当前这句歌词当歌名发出去</span></label>
+      <label class="cp-switch"><input type="checkbox" id="cp-bt-cover" checked/><span>连封面一起发（需设备支持 AVRCP 1.6）</span></label>
+      <div class="cp-status" id="cp-bt-status"></div>
+      <div class="cp-row" style="margin-top:8px">
+        <button class="cp-btn sm" id="cp-bt-repush">重推到音箱</button>
+      </div>
+      <div class="cp-hint">设备上只显示"应用名"（比如「飞牛音乐 · 桌面播放器」）= 它没收到标题，只拿到应用名。<b>点「重推到音箱」</b>会先清空元数据再重发一遍，多数设备靠这个把 Now Playing 重建出来。<br/>蓝牙只有一条"元数据"通道（AVRCP）：歌名歌手一定能到，封面要设备支持 <b>AVRCP 1.6</b>，歌词协议里根本没有——所以用"当前歌词句冒充歌名、真歌名挪到专辑位"这个土办法。</div>
+    </div>
+  </div>
+</div>
+
+<audio id="audio" preload="none"></audio>
+
+<script>
+'use strict';
+/* ============ 常量 ============ */
+const $ = (s) => document.querySelector(s);
+const audio = $('#audio');
+let session = { connected:false, username:'' };
+
+/* ============ 工具 ============ */
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2600); }
+function fmt(ms){ if(!ms||isNaN(ms)) return '0:00'; const s=Math.floor(ms/1000); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+
+async function api(path, opts={}){
+  const r = await fetch(path, { headers:{'Accept':'application/json'}, ...opts });
+  if(r.status===401 && session.connected){ // 已登录状态下 401 = 登录态失效
+    session={connected:false,username:''};
+    try{ stopAndCleanup(); }catch(e){}
+    $('#app').style.display='none'; $('#login').style.display='flex';
+    $('#login-err').textContent='登录已过期，请重新登录';
+    throw new Error('登录已过期，请重新登录');
+  }
+  const ct = r.headers.get('content-type')||'';
+  if(ct.includes('json')) return await r.json();
+  return r;
+}
+function dataList(d, keys=['tracks','list','items','rows','albums','artists','playlists']){
+  if(Array.isArray(d)) return d;
+  if(!d || typeof d!=='object') return [];
+  for(const k of keys){ if(Array.isArray(d[k])) return d[k]; }
+  return [];
+}
+
+/* ============ 登录 ============ */
+$('#btn-login').addEventListener('click', async ()=>{
+  const base=$('#in-base').value, username=$('#in-user').value, password=$('#in-pass').value, accessCode=$('#in-code').value;
+  const err=$('#login-err');
+  if(!base||!username||!password){ err.textContent='请填写地址、账号、密码'; return; }
+  const btn=$('#btn-login'); btn.disabled=true; btn.textContent='连接中…'; err.textContent='';
+  try{
+    const r = await api('/api/connect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base,username,password,accessCode})});
+    if(r && r.code===0){
+      session={connected:true,username:r.data.username||username};
+      enter();
+    } else {
+      err.textContent = (r&&r.msg) ? mapErr(r.msg) : '登录失败';
+    }
+  }catch(e){ err.textContent='请求出错：'+e.message; }
+  finally{ btn.disabled=false; btn.textContent='连接并登录'; }
+});
+function mapErr(msg){
+  if(/unauthorized|token/i.test(msg)) return '账号或密码错误，或签名校验失败';
+  return msg;
+}
+$('#in-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') $('#btn-login').click(); });
+
+function enter(){
+  $('#login').style.display='none'; $('#app').style.display='flex';
+  $('#username').textContent=session.username;
+  $('#avatar').textContent=(session.username||'F').charAt(0).toUpperCase();
+  if(!raf) drawViz();
+  loadTracks();
+  // 恢复上次没播完的进度：显示曲目 + 进度停在断点，但不自动播放
+  if(pendingResume && pendingResume.guid){
+    resumePending();
+  }
+}
+// 恢复上次进度：只显示 + seek 到断点，绝不自动 play
+function resumePending(){
+  const t = pendingResume;
+  const fake = {
+    guid: t.guid, title: t.title || '上次播放', artist: t.artist || '',
+    album: t.album || '', coverId: t.coverId || '', duration: 0,
+  };
+  currentTrack = fake;
+  renderNowPlaying();
+  audio.src = '/api/p/track/stream?guid='+encodeURIComponent(t.guid);
+  // 等元数据加载出来后 seek 到断点（不 play）
+  const seekOnce = () => {
+    if(t.time>0) audio.currentTime = t.time;
+    audio.removeEventListener('loadedmetadata', seekOnce);
+    toast('已恢复上次播放位置');
+  };
+  audio.addEventListener('loadedmetadata', seekOnce);
+  loadLyrics(t.guid);
+  $('#btn-play').textContent='▶';
+  setSpin(false);
+}
+
+/* ============ 视图切换 ============ */
+document.querySelectorAll('header .tab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('header .tab').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+  const v=t.dataset.view;
+  $('#player').style.display = v==='player'?'flex':'none';
+  $('#library').style.display = v==='library'?'flex':'none';
+}));
+$('#btn-logout').addEventListener('click', async ()=>{
+  saveProgressNow();
+  try{ await api('/api/logout',{method:'POST'}); }catch(e){}
+  stopAndCleanup();
+  session={connected:false,username:''};
+  $('#app').style.display='none'; $('#login').style.display='flex';
+  $('#in-pass').value='';
+});
+
+/* ============ 曲库 ============ */
+let libMode='tracks';
+let allTracks=[]; // 默认播放队列 = 全部歌曲
+// 设置当前播放上下文队列，并同步当前曲目在其中的位置
+function setQueue(list){
+  queue = list || [];
+  if(currentTrack){ qIndex = queue.findIndex(t=>(normalizeTrack(t).guid===currentTrack.guid)); }
+  else { qIndex = -1; }
+}
+document.querySelectorAll('#library .tab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('#library .tab').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active'); libMode=t.dataset.lib; loadLibrary();
+}));
+
+async function loadTracks(){
+  const box=$('#lib-content');
+  box.innerHTML='<div class="loading">加载中…</div>';
+  const r = await api('/api/p/track/list?page=1&size=300');
+  if(r && r.code!==0 && r.code!==undefined){ box.innerHTML='<div class="empty">加载失败：'+(r.msg||'')+'</div>'; return; }
+  const list = dataList(r&&r.data ? r.data : r);
+  allTracks = list;
+  setQueue(list); // 默认：下一曲/上一曲就在全部歌曲里顺序播
+  renderTracks(list);
+}
+function normalizeTrack(t){
+  const album = (t.album && typeof t.album==='object') ? t.album : {};
+  const artists = Array.isArray(t.artists)?t.artists:[];
+  const audio = t.audioSpec||{};
+  return {
+    guid: t.guid||t.id,
+    title: t.title||t.name||'未知曲目',
+    artist: artists.map(a=>a.name).filter(Boolean).join(' / ')||t.artist||'未知歌手',
+    album: album.name||album.title||(typeof t.album==='string'?t.album:'')||'',
+    coverId: t.coverId||album.coverId||'',
+    duration: audio.duration||t.duration||0,
+    format: audio.extension||audio.format||t.format||'',
+    isFavorite: !!t.isFavorite,
+  };
+}
+function coverUrl(id){ return id ? ('/api/p/static/cover?coverId='+encodeURIComponent(id)) : ''; }
+
+function renderTracks(list){
+  const box=$('#lib-content');
+  if(!list.length){ box.innerHTML='<div class="empty">曲库是空的，先去飞牛音乐扫描音乐文件夹</div>'; return; }
+  box.innerHTML = list.map((t,i)=>{
+    const n=normalizeTrack(t); const c=coverUrl(n.coverId);
+    return `<div class="row" data-guid="${n.guid}">
+      <div class="idx">${i+1}</div>
+      <div class="cov">${c?`<img src="${c}" loading="lazy">`:'♪'}</div>
+      <div class="meta"><div class="t">${esc(n.title)}</div><div class="s">${esc(n.artist)}${n.album?' · '+esc(n.album):''}</div></div>
+      <div class="dur">${fmt(n.duration)}${n.format?' · '+esc(n.format):''}</div>
+    </div>`;
+  }).join('');
+  box.querySelectorAll('.row').forEach(el=>el.addEventListener('click',()=>{
+    const guid=el.dataset.guid;
+    const track=list.find(t=>(normalizeTrack(t).guid===guid));
+    if(track){ setQueue(list); playTrack(track); }
+  }));
+}
+
+async function loadLibrary(){
+  const box=$('#lib-content'); box.innerHTML='<div class="loading">加载中…</div>';
+  let r, list, html='';
+  try{
+    if(libMode==='tracks'){ r=await api('/api/p/track/list?page=1&size=300'); list=dataList(r.data); allTracks=list; setQueue(list); renderTracks(list); return; }
+    if(libMode==='albums'){ r=await api('/api/p/album/list?page=1&size=100'); list=dataList(r.data); html=gridHTML(list,'album',a=>a.name||a.title,a=>a.artists?.map(x=>x.name).join('/')||a.artist||''); }
+    else if(libMode==='artists'){ r=await api('/api/p/artist/list-all'); list=dataList(r.data); html=gridHTML(list,'artist',a=>a.name||a.title,()=>''); }
+    else if(libMode==='playlists'){ r=await api('/api/p/playlist/list'); list=dataList(r.data); html=gridHTML(list,'playlist',p=>p.name||p.title,p=>p.trackCount?p.trackCount+' 首':''); }
+    else if(libMode==='favorites'){ r=await api('/api/p/favorite-track/list?page=1&size=300'); list=dataList(r.data); renderTracks(list); return; }
+  }catch(e){ box.innerHTML='<div class="empty">加载失败：'+(e && e.message ? esc(e.message) : '网络错误')+'</div>'; return; }
+  if(r && r.code!==0 && r.code!==undefined){ box.innerHTML='<div class="empty">加载失败：'+(r.msg||'')+'</div>'; return; }
+  box.innerHTML = html || '<div class="empty">暂无内容</div>';
+  box.querySelectorAll('.card').forEach(el=>el.addEventListener('click',()=>openDetail(el.dataset.type, el.dataset.guid)));
+}
+function gridHTML(list, type, nameFn, subFn){
+  if(!list.length) return '<div class="empty">暂无内容</div>';
+  return '<div class="grid">'+list.map(x=>{
+    const guid=x.guid||x.id; const c=coverUrl(x.coverId||'');
+    const sub=subFn(x)||'';
+    return `<div class="card" data-type="${type}" data-guid="${guid}">
+      <div class="cover">${c?`<img src="${c}" loading="lazy">`:'♪'}</div>
+      <div class="name">${esc(nameFn(x)||'未命名')}</div>
+      ${sub?`<div class="sub">${esc(sub)}</div>`:''}
+    </div>`;
+  }).join('')+'</div>';
+}
+async function openDetail(type, guid){
+  const box=$('#lib-content'); box.innerHTML='<div class="loading">加载中…</div>';
+  let r, list;
+  if(type==='album'){ r=await api('/api/p/track/album-detail/list?albumGUID='+encodeURIComponent(guid)+'&page=1&size=300'); list=dataList(r.data); renderTracks(list); }
+  else if(type==='artist'){ r=await api('/api/p/track/artist-detail/list?artistGUID='+encodeURIComponent(guid)+'&page=1&size=300'); list=dataList(r.data); renderTracks(list); }
+  else if(type==='playlist'){ r=await api('/api/p/track/playlist-detail/list?playlistGUID='+encodeURIComponent(guid)+'&page=1&size=300'); list=dataList(r.data); renderTracks(list); }
+  else { box.innerHTML='<div class="empty">不支持</div>'; }
+}
+function esc(s){ return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* 搜索 */
+let searchTimer, searchSeq=0, searchCtrl=null;
+$('#in-search').addEventListener('input',e=>{
+  clearTimeout(searchTimer);
+  const q=e.target.value.trim();
+  // 防抖拉长到 500ms，减少输入过程中的请求次数
+  searchTimer=setTimeout(()=>{ if(q) doSearch(q); else { searchSeq++; if(searchCtrl){ try{searchCtrl.abort();}catch(e){} } loadTracks(); } },500);
+});
+async function doSearch(q){
+  const box=$('#lib-content');
+  const seq=++searchSeq;
+  if(searchCtrl){ try{ searchCtrl.abort(); }catch(e){} }  // 取消上一次未完成的搜索
+  searchCtrl=new AbortController();
+  const timer=setTimeout(()=>{ try{ searchCtrl.abort(); }catch(e){} }, 15000); // 15s 兜底超时
+  box.innerHTML='<div class="loading">搜索「'+esc(q)+'」…</div>';
+  try{
+    const r=await api('/api/p/search/track?q='+encodeURIComponent(q)+'&page=1&size=100',{signal:searchCtrl.signal});
+    if(seq!==searchSeq) return; // 已有更新的搜索，丢弃过期结果
+    const list=dataList(r.data);
+    if(!list.length){ box.innerHTML='<div class="empty">没有找到「'+esc(q)+'」相关歌曲</div>'; return; }
+    renderTracks(list);
+  }catch(e){
+    if(seq===searchSeq) box.innerHTML='<div class="empty">搜索失败或超时，请稍后重试</div>';
+  }finally{ clearTimeout(timer); }
+}
+
+/* ============ 播放 ============ */
+let queue=[], qIndex=-1, currentTrack=null, analyser=null, audioCtx=null, sourceNode=null, raf=null;
+
+/* —— 进度记忆：定时上报到服务端持久化 —— */
+let _lastSave=0;
+function saveProgressNow(){
+  if(!currentTrack || !currentTrack.guid) return;
+  const t = audio && audio.currentTime ? audio.currentTime : 0;
+  const body = {
+    guid: currentTrack.guid,
+    title: currentTrack.title || '',
+    artist: currentTrack.artist || '',
+    album: currentTrack.album || '',
+    coverId: currentTrack.coverId || '',
+    time: Math.floor(t),
+  };
+  fetch('/api/progress', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) }).catch(()=>{});
+  _lastSave = Date.now();
+}
+function throttleSaveProgress(){
+  if(Date.now()-_lastSave < 3000) return; // 至少间隔 3 秒
+  saveProgressNow();
+}
+
+async function playTrack(track){
+  saveProgressNow(); // 切歌前先保存上一首进度
+  currentTrack = normalizeTrack(track);
+  qIndex = queue.findIndex(t=>(normalizeTrack(t).guid===currentTrack.guid));
+  if(qIndex<0){ queue=[track]; qIndex=0; }
+  renderNowPlaying();
+  audio.src = '/api/p/track/stream?guid='+encodeURIComponent(currentTrack.guid);
+  try{ await audio.play(); }catch(e){ toast('播放失败：'+e.message); return; }
+  setSpin(true);
+  $('#btn-play').textContent='⏸';
+  setupAnalyser();
+  rollReset();
+  loadLyrics(currentTrack.guid);
+  markPlaying();
+}
+/* 转盘和磁带盒子共用一个播放状态：暂停时一起停转 */
+function setSpin(on){
+  const v=$('#vinyl'); if(v) v.classList.toggle('paused', !on);
+  const c=$('#cassette'); if(c) c.classList.toggle('paused', !on);
+}
+function renderNowPlaying(){
+  const t=currentTrack||{title:'暂无播放',artist:'—'};
+  $('#np-title').textContent=t.title; $('#np-artist').textContent=(t.artist||'')+(t.album?' · '+t.album:'');
+  $('#t-dur').textContent=fmt(t.duration||0);
+  const c=coverUrl(t.coverId);
+  setCover('cover-img','cover-ph',c);
+  setCover('cover-card-img','cover-card-ph',c);
+  // 竖屏磁带：贴纸用封面切图，标签上印歌名
+  setCover('tape-img','tape-ph',c);
+  const tt=$('#tape-ttl'); if(tt) tt.textContent=t.title||'未在播放';
+  // 蓝牙端同步"这一首"
+  // 切歌必须把元数据"清空再写"：只改内容，不少设备当没变，屏幕停在上首歌或退回应用名
+  BT._key = ''; BT._at = 0;
+  if ('mediaSession' in navigator) { try { navigator.mediaSession.metadata = null; } catch (e) {} }
+  setTimeout(()=>btPush(true), 200);
+}
+function setCover(imgId, phId, c){
+  const img=$('#'+imgId), ph=$('#'+phId);
+  if(!img||!ph) return;
+  if(c){ img.src=c; img.style.display='block'; ph.style.display='none'; }
+  else { img.style.display='none'; ph.style.display='block'; }
+}
+function markPlaying(){
+  document.querySelectorAll('#lib-content .row').forEach(el=>{
+    el.classList.toggle('playing', el.dataset.guid===currentTrack?.guid);
+  });
+}
+/* 播放模式：顺序 / 漫游(乱序) / 单曲循环 —— 对应飞牛音乐的"漫游"即乱序播放 */
+/* 图标一律走单色 SVG：emoji 在灯箱/浅色皮肤里是彩色块，和"只靠发光"的界面打架 */
+const _CI='<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">';
+const _REPEAT='<path d="M17.2 3.2 20.6 6.4 17.2 9.6"/><path d="M20.6 6.4H7.8A4.2 4.2 0 0 0 3.6 10.6"/><path d="M6.8 20.8 3.4 17.6 6.8 14.4"/><path d="M3.4 17.6h12.8a4.2 4.2 0 0 0 4.2-4.2"/>';
+const PLAY_MODES=[
+  { id:'order',   icon:_CI+_REPEAT+'</svg>', name:'顺序播放' },
+  { id:'shuffle', icon:_CI+'<path d="M4 6.6h3c1.2 0 2.3.6 3 1.6l4 6.2c.7 1 1.8 1.6 3 1.6h3"/><path d="m17.4 3.8 3 2.8-3 2.8"/><path d="M4 17.4h3c1.2 0 2.3-.6 3-1.6l4-6.2c.7-1 1.8-1.6 3-1.6h3"/><path d="m17.4 13.4 3 2.8-3 2.8"/></svg>', name:'漫游（乱序播放）' },
+  { id:'one',     icon:_CI+_REPEAT+'<path d="M12 9.6v5"/><path d="m10.5 10.9 1.5-1.3"/></svg>', name:'单曲循环' },
+];
+let playMode='order';
+try{ const m=localStorage.getItem('fn-play-mode'); if(PLAY_MODES.some(x=>x.id===m)) playMode=m; }catch(e){}
+function applyPlayMode(){
+  const m=PLAY_MODES.find(x=>x.id===playMode)||PLAY_MODES[0];
+  const b=$('#btn-mode');
+  b.innerHTML=m.icon;
+  b.title='播放模式：'+m.name+'（点击切换）';
+  b.classList.toggle('mode-on', playMode!=='order');
+}
+$('#btn-mode').addEventListener('click',()=>{
+  const i=PLAY_MODES.findIndex(x=>x.id===playMode);
+  playMode=PLAY_MODES[(i+1)%PLAY_MODES.length].id;
+  try{ localStorage.setItem('fn-play-mode', playMode); }catch(e){}
+  applyPlayMode();
+  toast('播放模式：'+(PLAY_MODES.find(x=>x.id===playMode)?.name||''));
+});
+function nextIndex(){
+  if(!queue.length) return -1;
+  if(queue.length===1) return 0;
+  if(playMode==='one') return qIndex<0?0:qIndex;   // 单曲循环：停在当前首
+  if(playMode==='shuffle'){                        // 漫游：随机挑一首，避开当前首
+    let i; do{ i=Math.floor(Math.random()*queue.length); } while(i===qIndex);
+    return i;
+  }
+  return (qIndex+1)%queue.length;                  // 顺序：列表循环
+}
+function prevIndex(){
+  if(!queue.length) return -1;
+  if(queue.length===1) return 0;
+  if(playMode==='one') return qIndex<0?0:qIndex;
+  if(playMode==='shuffle'){                        // 漫游下"上一首"同样随机
+    let i; do{ i=Math.floor(Math.random()*queue.length); } while(i===qIndex);
+    return i;
+  }
+  return (qIndex-1+queue.length)%queue.length;
+}
+applyPlayMode();
+
+/* 播放器样式：转盘（黑胶唱片）↔ 封面（大方形封面），localStorage 持久化 */
+let viewMode='disc'; // disc=转盘（默认） | cover=封面
+try{ if(localStorage.getItem('fn-view-mode')==='cover') viewMode='cover'; }catch(e){}
+/* 两种视图图标都用内联 SVG，和标题栏图标走同一套线条风格 */
+const _V='<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8">';
+const VIEW_SVG={
+  /* 当前是转盘 → 图标提示“切到封面” */
+  image: _V+'<rect x="3.5" y="4.5" width="17" height="15" rx="3"/><circle cx="9" cy="10" r="1.9"/><path d="M4 17.2l4.6-4.4 3.6 3.4 3-2.8 4.3 4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  /* 当前是封面 → 图标提示“切回转盘” */
+  disc:  _V+'<circle cx="12" cy="12" r="8.4"/><circle cx="12" cy="12" r="2.4"/></svg>',
+};
+function applyViewMode(){
+  const isCover = viewMode==='cover';
+  $('#vinyl').style.display = isCover?'none':'';
+  $('#coverCard').style.display = isCover?'flex':'none';
+  $('#btn-view').innerHTML = isCover ? VIEW_SVG.disc : VIEW_SVG.image;
+  $('#btn-view').title = isCover?'切换到转盘模式':'切换到封面模式';
+}
+$('#btn-view').addEventListener('click',()=>{
+  viewMode = viewMode==='disc'?'cover':'disc';
+  try{ localStorage.setItem('fn-view-mode', viewMode); }catch(e){}
+  applyViewMode();
+  toast(viewMode==='cover'?'封面模式':'转盘模式');
+});
+applyViewMode();
+
+function playAt(i){
+  if(i<0||i>=queue.length) return;
+  playTrack(queue[i]);
+}
+$('#btn-play').addEventListener('click',()=>{
+  if(!currentTrack){ if(queue.length) playAt(0); else toast('先去曲库选首歌'); return; }
+  if(audio.paused){ audio.play(); setSpin(true); $('#btn-play').textContent='⏸'; }
+  else{ saveProgressNow(); audio.pause(); setSpin(false); $('#btn-play').textContent='▶'; }
+});
+$('#btn-next').addEventListener('click',()=>{ const i=nextIndex(); if(i>=0) playAt(i); });
+$('#btn-prev').addEventListener('click',()=>{ const i=prevIndex(); if(i>=0) playAt(i); });
+/* 音量调节（自定义滑块，跟进度条同款视觉；点击静音切换 + 持久化）
+   图标统一走内联 SVG：跟随各皮肤文字色，不用 emoji（emoji 在浅色皮肤里会糊成彩色块） */
+const _SVG_OPEN='<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">';
+const VOL_SVG={
+  full: _SVG_OPEN+'<path d="M11 5 6.6 9H3.6v6h3L11 19V5Z"/><path d="M14.8 9.6a3.4 3.4 0 0 1 0 4.8"/><path d="M17.4 7a7 7 0 0 1 0 10"/></svg>',
+  low:  _SVG_OPEN+'<path d="M11 5 6.6 9H3.6v6h3L11 19V5Z"/><path d="M14.8 9.6a3.4 3.4 0 0 1 0 4.8"/></svg>',
+  mute: _SVG_OPEN+'<path d="M11 5 6.6 9H3.6v6h3L11 19V5Z"/><path d="m15.2 9.8 4.4 4.4"/><path d="m19.6 9.8-4.4 4.4"/></svg>',
+};
+function applyVolume(v){
+  audio.volume = v/100;
+  $('#vol-fill').style.width = v+'%';
+  $('#vol-knob').style.left = v+'%';
+  $('#vol-ico').innerHTML = v===0 ? VOL_SVG.mute : (v<50 ? VOL_SVG.low : VOL_SVG.full);
+  try{ localStorage.setItem('fn-vol', String(v)); }catch(e){}
+}
+function setVolumeFromEvent(e){
+  const bar=$('#vol-bar'); const r=bar.getBoundingClientRect();
+  if(r.width<=0) return;
+  let p=(e.clientX-r.left)/r.width; p=Math.max(0,Math.min(1,p));
+  applyVolume(Math.round(p*100));
+}
+/* 拖动统一走 Pointer Events：鼠标、触屏、触控笔同一套逻辑，手指按住拖也跟手 */
+$('#vol-bar').addEventListener('pointerdown',e=>{
+  e.preventDefault();
+  const bar=$('#vol-bar');
+  setVolumeFromEvent(e);
+  try{ bar.setPointerCapture(e.pointerId); }catch(_){}
+  const move=ev=>setVolumeFromEvent(ev);
+  const up=()=>{
+    bar.removeEventListener('pointermove',move);
+    bar.removeEventListener('pointerup',up); bar.removeEventListener('pointercancel',up);
+  };
+  bar.addEventListener('pointermove',move);
+  bar.addEventListener('pointerup',up); bar.addEventListener('pointercancel',up);
+});
+let _mutedVol=100;
+$('#vol-ico').addEventListener('click',()=>{
+  if(audio.volume>0){ _mutedVol=Math.round(audio.volume*100); applyVolume(0); }
+  else { applyVolume(_mutedVol>0?_mutedVol:100); }
+});
+(function(){ let v=100; try{ v=parseInt(localStorage.getItem('fn-vol')||'100',10); if(isNaN(v)||v<0)v=100; }catch(e){} applyVolume(v); })();
+/* 消原声 / 只听伴奏：切中置(人声)保留系数，实时无下载 */
+let karaokeOn=false;
+$('#btn-karaoke').addEventListener('click',()=>{
+  if(!karaokeNodes){ toast('先播一首歌，再点这里消原声'); return; }
+  karaokeOn = !karaokeOn;
+  // 消原声：中置(人声)压到 6%；低频补回 75%（贝斯/底鼓不丢，伴奏不空）
+  const k = karaokeOn ? 0.06 : 1.0;
+  const l = karaokeOn ? 0.75 : 0.0;
+  karaokeNodes.vocalGain.gain.setTargetAtTime(k, audioCtx.currentTime, 0.08);
+  karaokeNodes.lowGain.gain.setTargetAtTime(l, audioCtx.currentTime, 0.08);
+  $('#btn-karaoke').classList.toggle('karaoke-on', karaokeOn);
+  toast(karaokeOn ? '伴奏模式：原声已消除' : '已恢复原声');
+});
+audio.addEventListener('ended',()=>{
+  // 整首播完：清除这条进度，避免下次恢复时卡在结尾
+  fetch('/api/clear-progress', { method:'POST' }).catch(()=>{});
+  const i=nextIndex(); if(i>=0) playAt(i);
+});
+audio.addEventListener('timeupdate',()=>{
+  const d=audio.duration||currentTrack?.duration||0, c=audio.currentTime||0;
+  const pct=d? (c/d*100):0;
+  $('#bar-fill').style.width=pct+'%'; $('#bar-knob').style.left=pct+'%';
+  $('#t-cur').textContent=fmt(c*1000);
+  updateLyric(c*1000);
+  throttleSaveProgress();
+  btPush();
+});
+audio.addEventListener('loadedmetadata',()=>{ if(audio.duration) $('#t-dur').textContent=fmt(audio.duration*1000); });
+// 进度条拖拽（Pointer Events：触屏按住也能拖）
+function seekTo(e){ if(!audio.duration) return; const r=$('#bar').getBoundingClientRect(); const pct=(e.clientX-r.left)/r.width; audio.currentTime=Math.max(0,Math.min(1,pct))*audio.duration; }
+$('#bar').addEventListener('pointerdown',e=>{
+  e.preventDefault();
+  const bar=$('#bar');
+  seekTo(e);
+  try{ bar.setPointerCapture(e.pointerId); }catch(_){}
+  // 触屏按住拖时先把歌词跟随停掉，松手再交给 timeupdate 继续
+  const move=ev=>seekTo(ev);
+  const up=()=>{
+    bar.removeEventListener('pointermove',move);
+    bar.removeEventListener('pointerup',up); bar.removeEventListener('pointercancel',up);
+  };
+  bar.addEventListener('pointermove',move);
+  bar.addEventListener('pointerup',up); bar.addEventListener('pointercancel',up);
+});
+
+/* ============ 可视化区：频谱 / 全曲波形 / 实时波形 ============ */
+let karaokeNodes=null; // { vocalGain } 消原声链路句柄
+function setupAnalyser(){
+  if(analyser) return;
+  try{
+    audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    sourceNode = audioCtx.createMediaElementSource(audio);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize=2048; analyser.smoothingTimeConstant=0.82;
+
+    // —— 消原声 mid/side 链路（实时，零下载）——
+    // mid=(L+R)/2 人声主集中在此；side=(L-R)/2 是立体声/伴奏信息。
+    // vocalGain 控制中置保留系数：1=正常原声，0=完全消掉中置人声。
+    const splitter = audioCtx.createChannelSplitter(2);
+    const merger   = audioCtx.createChannelMerger(2);
+    const midBus   = audioCtx.createGain();
+    const sideBus  = audioCtx.createGain();
+    const vocalGain= audioCtx.createGain();
+    const gL = audioCtx.createGain(); gL.gain.value = 0.5;
+    const gR = audioCtx.createGain(); gR.gain.value = 0.5;
+    const gLs= audioCtx.createGain(); gLs.gain.value = 0.5;
+    const gRs= audioCtx.createGain(); gRs.gain.value = -0.5;
+
+    sourceNode.connect(splitter);
+    splitter.connect(gL, 0); gL.connect(midBus);
+    splitter.connect(gR, 1); gR.connect(midBus);      // mid = (L+R)/2
+    splitter.connect(gLs, 0); gLs.connect(sideBus);
+    splitter.connect(gRs, 1); gRs.connect(sideBus);   // side = (L-R)/2
+
+    midBus.connect(vocalGain);
+    const toLm=audioCtx.createGain(); toLm.gain.value=1;
+    const toRm=audioCtx.createGain(); toRm.gain.value=1;
+    const toLs=audioCtx.createGain(); toLs.gain.value=1;
+    const toRs=audioCtx.createGain(); toRs.gain.value=-1;
+    vocalGain.connect(toLm); toLm.connect(merger,0,0); // L' += mid*k
+    vocalGain.connect(toRm); toRm.connect(merger,0,1); // R' += mid*k
+    sideBus.connect(toLs); toLs.connect(merger,0,0);   // L' += side
+    sideBus.connect(toRs); toRs.connect(merger,0,1);   // R' -= side
+
+    // 低频补偿：消原声时保留贝斯/底鼓（取 mid 的低频段单声道补回，绕开 vocalGain）
+    const lpFilter = audioCtx.createBiquadFilter();
+    lpFilter.type='lowpass'; lpFilter.frequency.value=160; lpFilter.Q.value=0.7;
+    const lowGain = audioCtx.createGain(); lowGain.gain.value=0;
+    midBus.connect(lpFilter); lpFilter.connect(lowGain);
+    lowGain.connect(merger,0,0);
+    lowGain.connect(merger,0,1);
+
+    merger.connect(analyser); analyser.connect(audioCtx.destination);
+    karaokeNodes = { vocalGain, lowGain };
+  }catch(e){ /* 波形/消原声不可用时静默降级 */ }
+}
+function sizeCanvas(cv,dpr){
+  const W=cv.clientWidth,H=cv.clientHeight;
+  const w=Math.round(W*dpr),h=Math.round(H*dpr);
+  if(w&&h&&(cv.width!==w||cv.height!==h)){ cv.width=w; cv.height=h; }
+  const ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+  return [W,H];
+}
+let frozenFreq=null, frozenTime=null; // 暂停时冻结的最后一帧，保持波形不塌成直线
+/* 灯箱 canvas 用的发光色（跟着灯箱配色走，由 applyLumenPalette 更新） */
+let LM_C={a:'255,181,71', b:'255,138,61', c:'255,196,110'};
+
+/* 灯箱皮肤专用绘制：左侧竖音柱 + 底部波浪小柱群
+   不共用原三块 canvas，是为了让这套布局能自己决定这两个区域的形状与位置 */
+function drawLumen(freq,time,dpr){
+  /* 左：竖音柱（低频在左，从下往上长） */
+  const vu=$('#lmVu');
+  if(vu){
+    const [W,H]=sizeCanvas(vu,dpr);
+    if(W&&H){
+      const ctx=vu.getContext('2d');
+      ctx.clearRect(0,0,W,H);
+      const n=15, gap=3, bw=(W-gap*(n-1))/n;
+      const bins=(freq&&analyser)?analyser.frequencyBinCount:0;
+      for(let i=0;i<n;i++){
+        let v;
+        if(freq&&bins) v=freq[Math.floor(Math.pow(i/n,1.55)*bins*0.48)]/255;
+        else v=.10+.07*Math.sin(i*.85+performance.now()/900);
+        const h=Math.max(2, Math.min(1, v*1.28)*H*0.94);
+        const x=i*(bw+gap);
+        const g=ctx.createLinearGradient(0,H-h,0,H);
+        g.addColorStop(0,`rgba(${LM_C.c},.98)`);
+        g.addColorStop(.42,`rgba(${LM_C.a},.88)`);
+        g.addColorStop(1,`rgba(${LM_C.b},.20)`);
+        ctx.fillStyle=g;
+        ctx.fillRect(x,H-h,bw,h);
+        ctx.fillStyle=`rgba(${LM_C.c},.95)`;     // 柱顶亮头，像灯管端面
+        ctx.fillRect(x,H-h,bw,2);
+      }
+    }
+  }
+  /* 底：波浪小柱群（用时分数据，随音乐起伏） */
+  const bars=$('#lmBars');
+  if(bars){
+    const [W2,H2]=sizeCanvas(bars,dpr);
+    if(W2&&H2){
+      const ctx2=bars.getContext('2d');
+      ctx2.clearRect(0,0,W2,H2);
+      const m=72, gap2=2, bw2=(W2-gap2*(m-1))/m;
+      const tl=time?time.length:0;
+      for(let i=0;i<m;i++){
+        let v;
+        if(time&&tl){
+          v=Math.abs(time[Math.floor(i*tl/m)]-128)/128;   // 0..1 波形幅度
+          v=Math.min(1, v*1.9);                            // 放大，让起伏看得见
+        }else{
+          v=.16+.12*Math.sin(i*.28+performance.now()/700);
+        }
+        const h=Math.max(1.5, v*H2);
+        const x=i*(bw2+gap2);
+        const g2=ctx2.createLinearGradient(0,H2-h,0,H2);
+        g2.addColorStop(0,`rgba(${LM_C.c},.95)`);
+        g2.addColorStop(1,`rgba(${LM_C.b},.22)`);
+        ctx2.fillStyle=g2;
+        ctx2.fillRect(x,H2-h,bw2,h);
+      }
+    }
+  }
+}
+
+function drawViz(now){
+  raf=requestAnimationFrame(drawViz);
+  // 波形区被隐藏时（新拟物 / 瑞士极简这类留白皮肤）直接跳过：省掉三个 canvas 的取样与重绘
+  if(document.body.classList.contains('no-viz')) return;
+  const dpr=window.devicePixelRatio||1;
+  let freq=null,time=null;
+  if(analyser){
+    if(!audio.paused){
+      freq=new Uint8Array(analyser.frequencyBinCount); analyser.getByteFrequencyData(freq);
+      time=new Uint8Array(analyser.fftSize); analyser.getByteTimeDomainData(time);
+      frozenFreq=freq; frozenTime=time;
+    } else {
+      // 暂停：用冻结的最后一帧，保持波形可见（不读静音数据）
+      freq=frozenFreq; time=frozenTime;
+    }
+  }
+  /* —— 灯箱走独立绘制：左竖音柱 + 底部小柱群，原三块不画 —— */
+  if(document.body.classList.contains('skin-lumen')){ drawLumen(freq,time,dpr); return; }
+
+  /* —— 频谱柱 —— */
+  {
+    const cv=$('#spec'),ctx=cv.getContext('2d');
+    const [W,H]=sizeCanvas(cv,dpr);
+    ctx.clearRect(0,0,W,H);
+    const bars=48,bw=W/bars,n=freq?analyser.frequencyBinCount:0;
+    for(let i=0;i<bars;i++){
+      const v=freq? freq[Math.floor(i*n/bars)]/255 : 0.06+0.045*Math.sin(i*1.3);
+      const h=Math.max(2,v*H*0.8);
+      const g=ctx.createLinearGradient(0,H-h,0,H);
+      g.addColorStop(0,vizRGBA(.95)); g.addColorStop(1,vizRGBA(.10));
+      ctx.fillStyle=g;
+      ctx.fillRect(i*bw+1,H-h,bw-2,h);
+    }
+  }
+  /* —— 实时波形线 —— */
+  {
+    const cv=$('#wave'),ctx=cv.getContext('2d');
+    const [W,H]=sizeCanvas(cv,dpr);
+    ctx.clearRect(0,0,W,H);
+    ctx.beginPath();
+    ctx.strokeStyle=time?vizRGBA(.95):vizRGBA(.30);
+    ctx.lineWidth=2; ctx.shadowColor=vizRGBA(.8); ctx.shadowBlur=time?12:0;
+    const n=time?analyser.fftSize:0;
+    for(let x=0;x<W;x++){
+      const v=time? (time[Math.floor(x*n/W)]/128-1) : Math.sin(x/40)*0.07;
+      const y=H/2+v*H*0.42;
+      x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.stroke(); ctx.shadowBlur=0;
+  }
+  /* —— 滚动波形 —— */
+  drawRoll(now);
+}
+
+/* —— 滚动波形（录音机样式：播放头固定在右，已播历史不断往左推，零下载）—— */
+let rollPeaks=[];   // 振幅 0..1，最新在末尾
+let _rollLast=0;
+function rollReset(){ rollPeaks=[]; _rollLast=0; frozenFreq=null; frozenTime=null; }
+function drawRoll(now){
+  const cv=$('#peaks'); if(!cv || !cv.clientWidth) return;
+  const ctx=cv.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  const [W,H]=sizeCanvas(cv,dpr);
+  // 每 100ms 从正在播的音频里采一个振幅（不用下载任何额外数据）
+  if(analyser && !audio.paused && now && now-_rollLast>=100){
+    _rollLast=now;
+    const arr=new Uint8Array(analyser.fftSize);
+    analyser.getByteTimeDomainData(arr);
+    let peak=0;
+    for(let i=0;i<arr.length;i+=4){ const v=Math.abs(arr[i]-128)/128; if(v>peak)peak=v; }
+    rollPeaks.push(peak);
+    const maxN=Math.ceil(W/3)+2;
+    if(rollPeaks.length>maxN) rollPeaks.splice(0, rollPeaks.length-maxN);
+  }
+  ctx.clearRect(0,0,W,H);
+  // 中轴线
+  ctx.strokeStyle=vizRGBA(.22); ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,H/2+.5); ctx.lineTo(W,H/2+.5); ctx.stroke();
+  const amp=H*0.46, n=rollPeaks.length;
+  if(n===0){
+    // 待机/暂无历史：画一条完全静态的柔和波浪（不用时间项，暂停/待机时不再漂移）
+    ctx.strokeStyle=vizRGBA(.32); ctx.lineWidth=1.5;
+    ctx.beginPath();
+    for(let x=0;x<W;x++){
+      const y=H/2 + Math.sin(x/26)*H*0.09;
+      x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    return;
+  }
+  // 从右往左画：最新采的贴着右边缘，历史往左推
+  ctx.fillStyle=vizRGBA(.85);
+  for(let i=0;i<n;i++){
+    const x=W-(n-i)*3+1;
+    if(x<-3) continue;   // 超出左边界的老柱子跳过，继续画右边（不能用 break，否则满窗口后整个波形消失）
+    const v=Math.max(0.02, rollPeaks[i]);
+    ctx.fillRect(x, H/2-v*amp, 2, v*amp*2);
+  }
+}
+
+function stopAndCleanup(){
+  if(raf) cancelAnimationFrame(raf); raf=null;
+  if(audioCtx){ try{audioCtx.close();}catch(e){} }
+  audioCtx=null; analyser=null; sourceNode=null; karaokeNodes=null;
+  karaokeOn=false; $('#btn-karaoke').classList.remove('karaoke-on');
+  rollPeaks=[]; audio.pause(); audio.src='';
+}
+
+/* 歌词字号调节（A−/A+，14-96px，持久化） */
+function applyLyricSize(s){
+  s=Math.max(14,Math.min(96,Math.round(s)));
+  document.documentElement.style.setProperty('--lyric-size', s+'px');
+  try{ localStorage.setItem('fn-lyric-size', String(s)); }catch(e){}
+}
+function getLyricSize(){
+  const v=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--lyric-size'),10);
+  return isNaN(v)?28:v;
+}
+$('#lyric-smaller').addEventListener('click',()=>applyLyricSize(getLyricSize()-2));
+$('#lyric-bigger').addEventListener('click',()=>applyLyricSize(getLyricSize()+2));
+(function(){ let s=28; try{ s=parseInt(localStorage.getItem('fn-lyric-size')||'28',10); if(isNaN(s))s=28; }catch(e){} applyLyricSize(s); })();
+
+/* ============ 外观切换（皮肤 6 种 + 配色 3 种 = 9 套，持久化） ============
+   viz:false 的皮肤不显示波形（留白型：新拟物 / 瑞士极简）
+   —— 不是靠 CSS 每处各写一遍，而是统一挂 body.no-viz，皮肤之间零串扰 */
+let vizColors={r:124,g:199,b:255};
+const vizRGBA=a=>`rgba(${vizColors.r},${vizColors.g},${vizColors.b},${a})`;
+function refreshVizColors(){
+  const accent=getComputedStyle(document.body).getPropertyValue('--accent-2').trim();
+  const m=accent.match(/^#([0-9a-f]{6})$/i);
+  if(m){ const h=m[1];
+    vizColors={r:parseInt(h.slice(0,2),16),g:parseInt(h.slice(2,4),16),b:parseInt(h.slice(4,6),16)};
+  }
+}
+
+/* ==================================================================
+   透明灯箱的配色（只换「发出来的光」，底永远黑）
+   —— 透明屏的黑色是「不发光」，所以箱体那块永远是吸光的黑；
+      真正决定观感的是发光的颜色：琥珀暖、纯白最亮、冰蓝冷。
+      下面每套只换 8 个变量，CSS 与 canvas 都跟着走。
+   ================================================================== */
+const LM_PALETTES=[
+  { id:'amber',  name:'琥珀 · 默认',  a:'255,181,71',  b:'255,138,61',  c:'255,196,110', ink:'#f6efe2', txt:'246,239,226', hi:'#fff4e2', ac:'#ffb547', ac2:'#ff8a3d', dot:'#ffb547' },
+  { id:'tri',    name:'三色霓虹 · 蓝框红键黄字', a:'255,200,26', b:'255,34,51', c:'255,120,20', ink:'#ffd21a', txt:'255,236,180', hi:'#ffd21a', ac:'#ffc400', ac2:'#ff2233', dot:'#ffc400', tri:true },
+  { id:'white',  name:'纯白 · 高对比', a:'255,255,255', b:'186,205,235', c:'255,255,255', ink:'#ffffff', txt:'255,255,255', hi:'#ffffff', ac:'#ffffff', ac2:'#dfe8f7', dot:'#ffffff' },
+  { id:'ice',    name:'冰蓝',          a:'132,198,255', b:'74,150,255',  c:'198,230,255', ink:'#eaf5ff', txt:'234,245,255', hi:'#f6fbff', ac:'#7cc4ff', ac2:'#4a96ff', dot:'#84c6ff' },
+  { id:'cyan',   name:'青绿',          a:'78,240,214',  b:'24,190,190',  c:'170,255,238', ink:'#e6fffa', txt:'230,255,251', hi:'#effffc', ac:'#4ef0d6', ac2:'#18bebe', dot:'#4ef0d6' },
+  { id:'violet', name:'霓虹紫',        a:'186,140,255', b:'140,86,255',  c:'222,186,255', ink:'#f4ecff', txt:'244,236,255', hi:'#faf5ff', ac:'#ba8cff', ac2:'#8c56ff', dot:'#ba8cff' },
+  { id:'rose',   name:'玫红',          a:'255,126,178', b:'236,70,132',  c:'255,186,216', ink:'#fff0f6', txt:'255,240,246', hi:'#fff6fa', ac:'#ff7eb2', ac2:'#ec4684', dot:'#ff7eb2' },
+];
+let lmPalId='amber';
+try{ const v=localStorage.getItem('fn-lm-pal'); if(LM_PALETTES.some(x=>x.id===v)) lmPalId=v; }catch(e){}
+function applyLumenPalette(id){
+  const p=LM_PALETTES.find(x=>x.id===id)||LM_PALETTES[0];
+  lmPalId=p.id;
+  const st=document.body.style;
+  st.setProperty('--lm-rgb',p.a);  st.setProperty('--lm-rgb2',p.b); st.setProperty('--lm-rgb3',p.c);
+  st.setProperty('--lm-txt',p.txt); st.setProperty('--lm-ink',p.ink); st.setProperty('--lm-hi',p.hi);
+  st.setProperty('--lm-accent',p.ac); st.setProperty('--lm-accent2',p.ac2);
+  LM_C={a:p.a, b:p.b, c:p.c};
+  document.body.toggleAttribute('data-lmtri', !!p.tri);
+  if(p.tri){
+    st.setProperty('--lm-edge', '47,107,255');
+  } else {
+    st.removeProperty('--lm-edge');   // 交回 CSS 里的 var(--lm-rgb)
+  }
+  document.querySelectorAll('.lm-dot').forEach(el=>el.classList.toggle('on', el.dataset.p===p.id));
+  try{ localStorage.setItem('fn-lm-pal', p.id); }catch(e){}
+  refreshVizColors();
+}
+
+/* ==================================================================
+   透明玻璃的「色调」：把四团极光 + 三个强调色一起旋转色相
+   0° 时清掉行内变量，颜色与写死在 CSS 里的原配色完全一致
+   ================================================================== */
+const GLASS_BASE=[[120,92,255],[0,182,255],[178,92,205],[30,190,170]];
+const GLASS_ACC=['#8ab4ff','#cfe4ff','#a9d8ff'];
+let glassHue=0;
+try{ const v=parseInt(localStorage.getItem('fn-glass-hue'),10); if(!isNaN(v)) glassHue=Math.max(-180,Math.min(180,v)); }catch(e){}
+
+function _rgb2hsl(r,g,b){
+  r/=255; g/=255; b/=255;
+  const mx=Math.max(r,g,b), mn=Math.min(r,g,b), d=mx-mn, l=(mx+mn)/2;
+  let h=0, sl=0;
+  if(d){
+    sl = l>0.5 ? d/(2-mx-mn) : d/(mx+mn);
+    if(mx===r) h=(g-b)/d+(g<b?6:0);
+    else if(mx===g) h=(b-r)/d+2;
+    else h=(r-g)/d+4;
+    h*=60;
+  }
+  return [h, sl*100, l*100];
+}
+function _hsl2rgb(h,s,l){
+  h=((h%360)+360)%360; s/=100; l/=100;
+  const c=(1-Math.abs(2*l-1))*s, x=c*(1-Math.abs((h/60)%2-1)), m=l-c/2;
+  let r,g,b;
+  if(h<60){ r=c; g=x; b=0; }
+  else if(h<120){ r=x; g=c; b=0; }
+  else if(h<180){ r=0; g=c; b=x; }
+  else if(h<240){ r=0; g=x; b=c; }
+  else if(h<300){ r=x; g=0; b=c; }
+  else { r=c; g=0; b=x; }
+  return [Math.round((r+m)*255), Math.round((g+m)*255), Math.round((b+m)*255)];
+}
+function _rotRGB(rgb,deg){
+  const hsl=_rgb2hsl(rgb[0],rgb[1],rgb[2]);
+  return _hsl2rgb(hsl[0]+deg,hsl[1],hsl[2]).join(',');
+}
+function _rotHex(hex,deg){
+  const n=parseInt(hex.slice(1),16);
+  const hsl=_rgb2hsl((n>>16)&255,(n>>8)&255,n&255);
+  const o=_hsl2rgb(hsl[0]+deg,hsl[1],hsl[2]);
+  return '#'+o.map(v=>v.toString(16).padStart(2,'0')).join('');
+}
+function paintGlassHue(){
+  const st=document.body.style;
+  GLASS_BASE.forEach((rgb,i)=>st.setProperty('--g'+(i+1), _rotRGB(rgb,glassHue)));
+  st.setProperty('--accent',   _rotHex(GLASS_ACC[0],glassHue));
+  st.setProperty('--accent-2', _rotHex(GLASS_ACC[1],glassHue));
+  st.setProperty('--accent-3', _rotHex(GLASS_ACC[2],glassHue));
+  st.setProperty('--glow',      'rgba('+_rotRGB([138,180,255],glassHue)+',.30)');
+  st.setProperty('--glow-soft', 'rgba('+_rotRGB([200,225,255],glassHue)+',.45)');
+  st.setProperty('--gv-1', _rotRGB([170,150,255],glassHue));
+  st.setProperty('--gv-2', _rotRGB([180,210,255],glassHue));
+  st.setProperty('--gv-3', _rotRGB([200,225,255],glassHue));
+  const r=document.getElementById('gh-range'); if(r) r.value=String(glassHue);
+}
+function clearGlassHue(){
+  const st=document.body.style;
+  ['--g1','--g2','--g3','--g4','--gv-1','--gv-2','--gv-3','--accent','--accent-2','--accent-3','--glow','--glow-soft']
+    .forEach(k=>st.removeProperty(k));
+}
+
+const LOOKS=[
+  /* 完整皮肤（换材质、换排版细节），排前面 */
+  {id:'skin-brutal',   name:'新粗野 · 默认',   sw:'linear-gradient(135deg,#ffe066 55%,#0a0a0a 55%)', viz:true },
+  {id:'skin-glass',    name:'透明玻璃',        sw:'linear-gradient(135deg,#7c5cff,#00b6ff 55%,#b25ccd)', viz:true },
+  {id:'skin-pixel',    name:'8-BIT 像素',      sw:'linear-gradient(135deg,#39ff88 55%,#070d09 55%)', viz:true },
+  {id:'skin-neumorph', name:'新拟物',          sw:'#e3e8ef', viz:false},
+  {id:'skin-clay',     name:'黏土',            sw:'linear-gradient(160deg,#a48bff,#7c5cff)', viz:true },
+  {id:'skin-swiss',    name:'瑞士极简',        sw:'linear-gradient(135deg,#ffffff 50%,#111111 50%)', viz:false},
+  {id:'skin-lumen',    name:'透明灯箱',        sw:'radial-gradient(circle at 50% 45%,#ffb547 0 34%,#000 36%)', viz:true },
+  /* 纯配色（材质不变，只换色），排后面 */
+  {id:'',              name:'深蓝 · 原配色',   sw:'#4da8ff', viz:true, sep:true },
+  {id:'theme-violet',  name:'暗紫',            sw:'#a86bff', viz:true },
+  {id:'theme-emerald', name:'翠绿',            sw:'#2dd4a7', viz:true },
+];
+const DEFAULT_LOOK='skin-brutal';
+const LOOK_VER='2';        // 默认皮肤改版号：与本地记录不一致时，本次强制切到新默认
+let lookId=DEFAULT_LOOK;
+try{
+  const saved=localStorage.getItem('fn-look');
+  const legacy=localStorage.getItem('fn-theme');
+  const ver=localStorage.getItem('fn-look-ver');
+  if(ver!==LOOK_VER) lookId=DEFAULT_LOOK;                               // 默认换过，这次让它生效
+  else if(saved!==null && LOOKS.some(x=>x.id===saved)) lookId=saved;    // 用户显式选过，尊重
+  else if(legacy && LOOKS.some(x=>x.id===legacy)) lookId=legacy;        // 旧版配色迁移
+  localStorage.setItem('fn-look-ver', LOOK_VER);
+}catch(e){}
+
+function applyLook(id){
+  const look=LOOKS.find(x=>x.id===id)||LOOKS[0];
+  lookId=look.id;
+  document.body.className=look.id;                  // 一个 class 定风格，绝不叠加
+  document.body.classList.toggle('no-viz', !look.viz);
+  // 玻璃色调写的是 body 行内变量，换到别的皮肤必须撤掉，否则会把别人的强调色顶掉
+  if(lookId==='skin-glass' && glassHue) paintGlassHue(); else clearGlassHue();
+  refreshVizColors();
+  // 不同皮肤/横竖屏的歌词区尺寸不一样，切完必须重新算居中，否则当前行会偏
+  try{ renderLyricScroll(); }catch(e){}
+  try{ localStorage.setItem('fn-look', look.id); }catch(e){}
+  document.querySelectorAll('.look-item').forEach(el=>{
+    el.classList.toggle('on', el.dataset.id===look.id);
+  });
+}
+
+/* 生成外观面板：皮肤下面挂二级选项（玻璃=色调滑杆，灯箱=发光配色） */
+const SUB_HTML={
+  'skin-glass': '<div class="look-sub"><span class="cap">色调</span>'
+    + '<input type="range" id="gh-range" min="-180" max="180" step="1" value="'+glassHue+'" aria-label="透明玻璃色调"></div>',
+  'skin-lumen': '<div class="look-sub"><span class="cap">配色</span>'
+    + LM_PALETTES.map(p=>'<button class="lm-dot" data-p="'+p.id+'" title="'+p.name+'"'
+        + ' style="background:radial-gradient(circle at 50% 42%,'+p.hi+','+p.dot+' 58%,#000 100%)"></button>').join('')
+    + '</div>',
+};
+(function buildLookMenu(){
+  const box=$('#look-menu');
+  box.innerHTML=LOOKS.map(l=>
+    (l.sep ? '<div class="look-sep"></div><div class="look-cap">只换配色</div>' : '')
+    + '<button class="look-item" data-id="'+l.id+'">'
+    + '<span class="sw" style="background:'+l.sw+'"></span>'
+    + '<span class="lbl">'+l.name+'</span>'
+    + '<span class="tick">✓</span>'
+    + '</button>'
+    + (SUB_HTML[l.id]||'')).join('');
+  box.querySelectorAll('.look-item').forEach(el=>{
+    el.addEventListener('click', e=>{
+      e.stopPropagation();
+      applyLook(el.dataset.id);
+      box.classList.remove('open');
+      const look=LOOKS.find(x=>x.id===lookId);
+      toast('外观：'+look.name);
+    });
+  });
+  // 二级选项：点/拖都不关面板，方便来回比色
+  box.querySelectorAll('.look-sub').forEach(el=>el.addEventListener('click', e=>e.stopPropagation()));
+  const gr=document.getElementById('gh-range');
+  if(gr){
+    gr.addEventListener('input', e=>{
+      glassHue=parseInt(e.target.value,10)||0;
+      try{ localStorage.setItem('fn-glass-hue', String(glassHue)); }catch(err){}
+      if(document.body.classList.contains('skin-glass')){
+        if(glassHue) paintGlassHue(); else clearGlassHue();
+        refreshVizColors();
+      } else applyLook('skin-glass');
+    });
+  }
+  box.querySelectorAll('.lm-dot').forEach(el=>{
+    el.addEventListener('click', e=>{
+      e.stopPropagation();
+      applyLumenPalette(el.dataset.p);
+      if(!document.body.classList.contains('skin-lumen')) applyLook('skin-lumen');
+      const pal=LM_PALETTES.find(p=>p.id===el.dataset.p);
+      toast('灯箱配色：'+(pal?pal.name:''));
+    });
+  });
+})();
+
+applyLumenPalette(lmPalId);
+applyLook(lookId);
+
+$('#btn-theme').addEventListener('click', e=>{
+  e.stopPropagation();
+  $('#look-menu').classList.toggle('open');
+});
+document.addEventListener('click', ()=>$('#look-menu').classList.remove('open'));
+
+/* 歌词 */
+let lyricLines=[];
+async function loadLyrics(guid){
+  lyricLines=[]; $('#lyricInner').innerHTML='<div class="lyric-line no-lyric">加载歌词…</div>';
+  try{
+    const r=await api('/api/p/lyric/list?trackGUID='+encodeURIComponent(guid));
+    const list=dataList(r.data);
+    const lrc = pickLyric(list);
+    lyricLines = parseLrc(lrc);
+    curLyricIdx=-1;
+    if(!lyricLines.length){ $('#lyricInner').innerHTML='<div class="lyric-line no-lyric">暂无歌词</div>'; return; }
+    $('#lyricInner').innerHTML=lyricLines.map((l,i)=>`<div class="lyric-line" data-i="${i}"><span class="tx">${esc(l.text)}</span></div>`).join('');
+    renderLyricScroll();
+    }catch(e){ $('#lyricInner').innerHTML='<div class="lyric-line no-lyric">歌词加载失败</div>'; }
+}
+function pickLyric(list){
+  if(!list||!list.length) return '';
+  for(const l of list){
+    const t = l && (l.content || l.lyric || l.lrc || l.text);
+    if(t) return t;
+  }
+  return '';
+}
+function parseLrc(raw){
+  if(!raw) return [];
+  const lines=[]; const re=/\[(\d{1,2}):(\d{1,2})(?:[.:](\d{1,3}))?\]/g;
+  for(const rawLine of String(raw).split(/\r?\n/)){
+    const times=[]; let m, text='';
+    re.lastIndex=0;
+    const matches=[...rawLine.matchAll(re)];
+    for(const mm of matches){
+      const min=+mm[1], sec=+mm[2], frac=mm[3]? (+mm[3]).toString().padEnd(3,'0').slice(0,3):'0';
+      times.push(min*60000+sec*1000+ +frac);
+    }
+    text = rawLine.replace(re,'').trim();
+    if(!text) continue;
+    for(const t of times) lines.push({time:t, text});
+  }
+  lines.sort((a,b)=>a.time-b.time);
+  return lines;
+}
+/* 当前句太长，一行塞不下 → 算出左右各要挪多远、走多久，交给 CSS 动画来回滚。
+   速度按 62px/s 走：太慢赶不上下句，太快看不清。 */
+function fitLyricLine(el){
+  const tx = el.firstElementChild;
+  if(!tx){ el.classList.remove('scroll'); return; }
+  const avail = el.clientWidth - 12;        // 减去左右各 6px 内边距
+  const w = tx.scrollWidth;
+  if(w <= avail + 4){ el.classList.remove('scroll'); return; }
+  // 句首贴在左边缘，句尾要露出来就得把整句往左推"超出的那一段"，
+  // 不是推一半——文本超宽时它本来就不居中，是从左往右溢出的
+  const shift = Math.ceil(w - avail) + 6;
+  const from = '6px', to = (-shift) + 'px';
+  if(el.classList.contains('scroll') &&
+     el.style.getPropertyValue('--to') === to) return;   // 已经滚着就别打断
+  el.style.setProperty('--from', from);
+  el.style.setProperty('--to', to);
+  el.style.setProperty('--run', Math.max(3.4, Math.min(18, (shift * 2) / 120)).toFixed(2) + 's');
+  el.classList.add('scroll');
+}
+let curLyricIdx=-1;
+// 提词器式滚动：当前句顶到面板正中 1/2 基准线，其余行按距离缩放+明暗
+function renderLyricScroll(){
+  const box=$('#lyrics'), inner=$('#lyricInner');
+  if(!box || !inner) return;
+  const viewH=box.clientHeight;
+  if(!viewH) return;
+  const kids=Array.from(inner.querySelectorAll('.lyric-line:not(.no-lyric)'));
+  if(!kids.length) return;
+  // 上下各留半屏：让首行/末行也能滚到正中
+  inner.style.paddingTop=Math.floor(viewH/2)+'px';
+  inner.style.paddingBottom=Math.floor(viewH/2)+'px';
+  // 未开始播放时锚定第一行；播放中锚定当前句
+  const anchor=Math.max(0,curLyricIdx);
+  const curEl=kids[anchor];
+  if(curEl){
+    const center=curEl.offsetTop + curEl.offsetHeight/2;
+    const target=center - viewH/2;
+    inner.style.transform='translateY('+(-Math.max(0,target))+'px)';
+  }
+  for(let i=0;i<kids.length;i++){
+    const el=kids[i];
+    const on=(curLyricIdx>=0 && i===curLyricIdx);
+    el.classList.toggle('active',on);
+    let factor,alpha;
+    if(on){ factor=1; alpha=1; }
+    else if(curLyricIdx<0){ factor=.86; alpha=.40; }
+    else{
+      const d=Math.abs(i-curLyricIdx);
+      if(d===1){ factor=.94; alpha=.60; }
+      else if(d===2){ factor=.87; alpha=.45; }
+      else{ factor=.80; alpha=.32; }
+    }
+    el.style.transform='scale('+factor+')';
+    el.style.opacity=alpha;
+    // 只有当前句需要横向滚（其余句缩小后基本放得下，放不下就居中裁掉不碍事）
+    if(on) fitLyricLine(el); else el.classList.remove('scroll');
+  }
+}
+function updateLyric(ms){
+  if(!lyricLines.length) return;
+  let idx=-1;
+  for(let i=0;i<lyricLines.length;i++){ if(lyricLines[i].time<=ms) idx=i; else break; }
+  if(idx===curLyricIdx) return;
+  curLyricIdx=idx;
+  renderLyricScroll();
+  btPush();
+}
+/* ---------------- 尺寸 / 全屏变化后的统一重排 ----------------
+   全屏、最大化、把窗口拖成竖屏时，Chromium 会连着发好几次 resize，最后一次也不一定
+   落在动画收尾之后。只在 resize 里算一次容易"算早了"：歌词还按旧高度定位，就停在
+   屏幕外面。这里用 ResizeObserver 兜底，再补几次延时重算。 */
+function fnRelayout(){
+  if(lyricLines.length){ try{ renderLyricScroll(); }catch(e){} }
+}
+window.fnRelayout=fnRelayout;
+let _relayoutTimers=[];
+function scheduleRelayout(){
+  _relayoutTimers.push(setTimeout(fnRelayout,0), setTimeout(fnRelayout,120),
+                       setTimeout(fnRelayout,320), setTimeout(fnRelayout,640));
+  if(_relayoutTimers.length>24) _relayoutTimers=_relayoutTimers.slice(-12);
+}
+window.addEventListener('resize', scheduleRelayout);
+window.addEventListener('orientationchange', scheduleRelayout);
+if(window.visualViewport){
+  visualViewport.addEventListener('resize', scheduleRelayout);
+}
+try{ new ResizeObserver(scheduleRelayout).observe(document.documentElement); }catch(e){}
+
+/* ---------------- 全屏按钮（触屏设备没有 F11） ---------------- */
+const FS_SVG_ON ='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5"/><path d="M20 9V4h-5"/><path d="M4 15v5h5"/><path d="M20 15v5h-5"/></svg>';
+const FS_SVG_OFF='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4"/><path d="M15 4v5h5"/><path d="M9 20v-5H4"/><path d="M15 20v-5h5"/></svg>';
+/* ------------------------------------------------------------------
+   全屏走主进程，不走 requestFullscreen。
+   原因：Windows 上竖屏显示器（1080×1920）进全屏时，浏览器那套 API 会把
+   窗口按显示器"没旋转"的 1920×1080 摆，右边一截直接跨到旁边那块屏上，
+   页面还以为自己是横屏，A± 就飘到第二块屏去了。
+   主进程能拿到显示器真实 bounds，进去以后还能掰回来。
+   ------------------------------------------------------------------ */
+const NATIVE = (window.fnNative && window.fnNative.isElectron) ? window.fnNative : null;
+let nativeFs = false;
+function isFs(){ return NATIVE ? nativeFs : !!(document.fullscreenElement || document.webkitFullscreenElement); }
+function syncFsIcon(){
+  const b=$('#btn-fs'); if(!b) return;
+  b.innerHTML = isFs() ? FS_SVG_OFF : FS_SVG_ON;
+  b.title = isFs() ? '退出全屏（F11 / Esc）' : '全屏（F11）';
+}
+function toggleFs(){
+  if(NATIVE){ NATIVE.toggleFullscreen(); return; }
+  const d=document, el=d.documentElement;
+  try{
+    if(isFs()){ (d.exitFullscreen||d.webkitExitFullscreen).call(d); }
+    else { (el.requestFullscreen||el.webkitRequestFullscreen).call(el, {navigationUI:'hide'}); }
+  }catch(e){ toast('这台设备不支持全屏'); }
+}
+document.addEventListener('fullscreenchange', ()=>{ syncFsIcon(); scheduleRelayout(); });
+if(NATIVE){
+  NATIVE.onFullscreen(on=>{ nativeFs=!!on; syncFsIcon(); scheduleRelayout(); });
+}
+$('#btn-fs').addEventListener('click', toggleFs);
+syncFsIcon();
+
+/* 自愈：窗口比显示器还宽/还高，说明它跨到旁边那块屏上去了 → 让主进程再掰一次。
+   正常全屏时 innerWidth 就等于显示器宽度，这里不会误触发。 */
+let geoFixTries = 0, geoTimer = 0;
+function checkGeometry(){
+  geoTimer = 0;
+  if(!NATIVE || !NATIVE.fixGeometry) return;
+  const sw = (window.screen && window.screen.width) || innerWidth;
+  const sh = (window.screen && window.screen.height) || innerHeight;
+  if((innerWidth > sw + 8 || innerHeight > sh + 8) && geoFixTries < 3){
+    geoFixTries++;
+    NATIVE.fixGeometry();
+  }
+}
+window.addEventListener('resize', ()=>{ if(geoTimer) clearTimeout(geoTimer); geoTimer = setTimeout(checkGeometry, 700); });
+
+/* 触屏双指 / 浏览器缩放会把整块 UI 顶出屏幕，非 100% 时提醒一次 */
+(function watchZoom(){
+  /* 触屏笔记本双指捏合，浏览器会把它变成 Ctrl+滚轮 → 整页放大，而且这个缩放会被
+     浏览器按站点记住，下次打开还是放大的。桌面播放器不需要缩放，直接拦掉。 */
+  window.addEventListener('wheel', e=>{ if(e.ctrlKey) e.preventDefault(); }, { passive:false });
+
+  /* 只在视觉缩放真的很大时才提示，而且要连着两次都一样才认（避免全屏动画途中误报） */
+  let warned = false, lastSc = 1;
+  const check = ()=>{
+    if(warned) return;
+    const sc = window.visualViewport ? visualViewport.scale : 1;
+    if(sc > 1.1 && Math.abs(sc - lastSc) < 0.02){
+      warned = true;
+      toast('页面被放大了，按 Ctrl+0 复位（Ctrl+滚轮 也能缩回去）');
+    }
+    lastSc = sc;
+  };
+  setTimeout(check, 1600);
+  document.addEventListener('fullscreenchange', ()=>setTimeout(check, 900));
+})();
+
+/* ==================================================================
+   蓝牙音箱（AVRCP 元数据）
+   ------------------------------------------------------------------
+   电脑连上蓝牙音箱 / 车机之后，系统"正在播放"里的歌名、歌手、封面就走这条：
+   浏览器 Media Session → Windows SMTC → AVRCP。
+   歌词协议里没有这个字段，所以用"当前这句歌词冒充歌名、真歌名挪到专辑位"
+   这个土办法，让带屏音箱也能把词滚动起来。
+   投屏（投到别的屏 / 电视 / 投影仪）在 1.5.0 整块删掉了，这里只剩蓝牙。
+   ================================================================== */
+const FC = (window.fnBt && window.fnBt.isElectron) ? window.fnBt : null;
+
+const BT = {
+  on: true,        // 默认开：关掉后我们根本不往系统媒体会话写，设备只显示应用名
+  lyric: true,
+  cover: true,
+  probeMsg: '',
+  sentAt: 0,
+  sentTitle: '',
+  _key: '',
+  _at: 0,
+};
+try {
+  BT.on = localStorage.getItem('fn-bt-on') !== '0';
+  BT.lyric = localStorage.getItem('fn-bt-lyric') !== '0';
+  BT.cover = localStorage.getItem('fn-bt-cover') !== '0';
+} catch (e) {}
+
+function btCurrentLine(){
+  if (!BT.lyric || curLyricIdx < 0 || !lyricLines[curLyricIdx]) return '';
+  return lyricLines[curLyricIdx].text || '';
+}
+
+function btSong(){
+  const t = currentTrack;
+  if (!t) return null;
+  const line = btCurrentLine();
+  // 封面带上"第几句"的缓存戳：不少音箱/车机只在封面变化时才整块刷新元数据，
+  // 光改歌名它不认。图还是同一张，只是 URL 变了，逼它重新走一遍 Now Playing。
+  const base = (BT.cover && t.coverId) ? (location.origin + coverUrl(t.coverId)) : '';
+  const tag = line ? ((base ? (base.indexOf('?') >= 0 ? '&' : '?') : '') + 'k=' + Math.max(0, curLyricIdx)) : '';
+  return {
+    id: t.guid || 'fn',
+    // 歌名绝不能为空：空标题有些设备会退回显示"应用名"
+    title: line || t.title || '飞牛音乐',
+    artist: t.artist || '',
+    // 歌词当歌名时，把真歌名放到专辑位，音箱上"歌名 / 专辑"两行正好是"词 / 曲名"
+    album: line ? (t.title || '') : (t.album || ''),
+    artwork: base ? (base + tag) : '',
+    position: audio.currentTime || 0,
+    duration: audio.duration || (t.duration ? t.duration / 1000 : 0),
+    playing: !audio.paused,
+  };
+}
+
+/* 面板上把"正在发的内容"亮出来：音箱不显示时，一眼能分清是没发出去还是它不认 */
+function btStatus(){
+  const el = $('#cp-bt-status');
+  if (!el) return;
+  const out = [];
+  if (BT.probeMsg) out.push(BT.probeMsg);
+  if (!BT.on){
+    el.className = 'cp-status';
+    el.innerHTML = out.concat('蓝牙元数据没开：开了才会往设备送歌名/歌手/封面。').join('<br/>');
+    return;
+  }
+  const s = btSong();
+  if (!s){
+    el.className = 'cp-status';
+    el.innerHTML = out.concat('还没开始播放').join('<br/>');
+    return;
+  }
+  const lyric = !!btCurrentLine();
+  const t = BT.sentAt ? new Date(BT.sentAt) : null;
+  const hhmmss = t ? ('0' + t.getHours()).slice(-2) + ':' + ('0' + t.getMinutes()).slice(-2) + ':' + ('0' + t.getSeconds()).slice(-2) : '—';
+  el.className = 'cp-status ok';
+  el.innerHTML = out.concat(
+    '正在发 → 歌名「' + esc(s.title) + '」' + (lyric ? '（当前歌词句）' : '（还没到第一句歌词，先发歌名）')
+    + '<br/>歌手「' + esc(s.artist || '—') + '」 · 专辑「' + esc(s.album || '—') + '」'
+    + '<br/>最后发送 ' + hhmmss + ' · Windows 收到的标题：'
+    + esc((navigator.mediaSession && navigator.mediaSession.metadata && navigator.mediaSession.metadata.title) || '（空）')
+  ).join('<br/>');
+}
+
+function btPush(force){
+  if (!BT.on) return;
+  const s = btSong();
+  if (!s) return;
+  const key = s.id + '|' + s.title + '|' + s.album + '|' + s.playing + '|' + s.artwork;
+  const now = Date.now();
+  if (!force && key === BT._key && now - BT._at < 4000) return;
+  BT._key = key; BT._at = now;
+  BT.sentAt = now;
+  BT.sentTitle = s.title;
+  if (FC) { try { FC.btUpdate(s); } catch (e) {} }
+  btStatus();
+  // 同时喂给浏览器/Electron 的 Media Session：Windows 的媒体浮层、蓝牙耳机按键都靠它
+  if ('mediaSession' in navigator) {
+    try {
+      const art = s.artwork ? [{ src: s.artwork, sizes: '512x512', type: 'image/jpeg' }] : [];
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: s.title, artist: s.artist, album: s.album, artwork: art,
+      });
+      navigator.mediaSession.playbackState = s.playing ? 'playing' : 'paused';
+    } catch (e) {}
+  }
+}
+
+/* 硬重推：先把元数据清空、再重新写一遍。
+   不少音箱和车机只在"Now Playing 被重建"时才重新读 AVRCP 字段。
+   Windows 那边也可能把同名同封面的更新合并掉，只能靠这个办法顶一下。 */
+function btForceRepush(){
+  BT._key = ''; BT._at = 0;
+  if ('mediaSession' in navigator) {
+    try { navigator.mediaSession.metadata = null; } catch (e) {}
+  }
+  if (FC) { try { FC.btUpdate(null); } catch (e) {} }
+  setTimeout(()=>{ btPush(true); toast('已重推到音箱'); }, 260);
+}
+
+function btPlaying(on){
+  if (FC && BT.on) { try { FC.btPlaying(on); } catch (e) {} }
+  if ('mediaSession' in navigator) {
+    try { navigator.mediaSession.playbackState = on ? 'playing' : 'paused'; } catch (e) {}
+  }
+}
+
+async function btProbe(){
+  if (!FC) return;
+  try {
+    const p = await FC.btProbe();
+    // 歌名/歌手走的是 Chromium 的 Media Session → Windows SMTC，这条是通的主路；
+    // 原生桥（electron-media-service）只是封面更稳的可选加强，没有也不影响发歌名。
+    BT.probeMsg = p && p.available
+      ? '通道：系统媒体会话（Media Session → SMTC）＋原生桥'
+      : '通道：系统媒体会话（Media Session → SMTC）';
+    if (p && p.error && !p.available) BT.probeMsg += '（原生桥未装，封面可能不显示）';
+    btStatus();
+  } catch (e) {}
+}
+
+/* 耳机/车载/键盘上的播放键 → 交给播放器（Media Session 动作） */
+(function bindMediaSession(){
+  if (!('mediaSession' in navigator)) return;
+  const fire = (action, fn) => { try { navigator.mediaSession.setActionHandler(action, fn); } catch (e) {} };
+  fire('play', ()=>{ if (audio.paused) $('#btn-play').click(); });
+  fire('pause', ()=>{ if (!audio.paused) $('#btn-play').click(); });
+  fire('previoustrack', ()=>$('#btn-prev').click());
+  fire('nexttrack', ()=>$('#btn-next').click());
+  fire('seekto', (d)=>{ if (d && typeof d.seekTime === 'number' && audio.duration) audio.currentTime = d.seekTime; });
+})();
+
+/* ---------------- 抽屉开关 ---------------- */
+function openBtPanel(){
+  $('#bt-panel').classList.add('open');
+  btProbe();
+  btStatus();
+}
+function closeBtPanel(){
+  $('#bt-panel').classList.remove('open');
+}
+
+/* ---------------- 事件绑定 ---------------- */
+$('#btn-bt').addEventListener('click', e=>{
+  e.stopPropagation();
+  if ($('#bt-panel').classList.contains('open')) closeBtPanel();
+  else openBtPanel();
+});
+$('#cp-close').addEventListener('click', closeBtPanel);
+$('#cp-bt-on').checked = BT.on;
+$('#cp-bt-repush').addEventListener('click', ()=>btForceRepush());
+$('#cp-bt-lyric').checked = BT.lyric;
+$('#cp-bt-cover').checked = BT.cover;
+$('#cp-bt-on').addEventListener('change', e=>{
+  BT.on = e.target.checked;
+  try { localStorage.setItem('fn-bt-on', BT.on ? '1' : '0'); } catch (err) {}
+  btProbe();
+  if (BT.on){ btPush(true); toast('蓝牙元数据：开'); } else toast('蓝牙元数据：关');
+});
+$('#cp-bt-lyric').addEventListener('change', e=>{
+  BT.lyric = e.target.checked;
+  try { localStorage.setItem('fn-bt-lyric', BT.lyric ? '1' : '0'); } catch (err) {}
+  btPush(true);
+  toast(BT.lyric ? '歌词当歌名输出' : '只输出歌名');
+});
+$('#cp-bt-cover').addEventListener('change', e=>{
+  BT.cover = e.target.checked;
+  try { localStorage.setItem('fn-bt-cover', BT.cover ? '1' : '0'); } catch (err) {}
+  btPush(true);
+  toast(BT.cover ? '封面一起发（需 AVRCP 1.6）' : '不发封面');
+});
+
+/* 快捷键：Ctrl+Shift+B 开关蓝牙面板（Mac 上是 ⌘+Shift+B） */
+window.addEventListener('keydown', e=>{
+  if (!(e.ctrlKey || e.metaKey) || !e.shiftKey) return;
+  if (e.key.toLowerCase() === 'b'){
+    e.preventDefault();
+    if ($('#bt-panel').classList.contains('open')) closeBtPanel(); else openBtPanel();
+  }
+});
+window.addEventListener('keydown', e=>{
+  if (e.key === 'Escape' && $('#bt-panel').classList.contains('open')) closeBtPanel();
+});
+
+/* 音频事件 → 推给音箱 */
+audio.addEventListener('play', ()=>{ btPlaying(true); btPush(true); btStatus(); });
+audio.addEventListener('pause', ()=>{ btPlaying(false); btPush(true); btStatus(); });
+audio.addEventListener('seeked', ()=>{ btPush(true); btStatus(); });
+/* 心跳：有些音箱/车机会漏掉某次元数据更新，5 秒补发一次，接上就能对上当前这句 */
+setInterval(()=>{ if (BT.on && !audio.paused) btPush(); }, 5000);
+
+
+/* 恢复会话 */
+let pendingResume = null; // 待恢复的进度（不自动播放）
+(async function(){
+  try{
+    // 服务端启动时会自动用记住的密码登录；这里轮询最多 ~3 秒等待它完成
+    let r = null;
+    for(let i=0;i<6;i++){
+      r = await api('/api/session');
+      if(r && r.data && r.data.connected) break;
+      if(!(r && r.data && r.data.hasSaved)) break; // 没记住密码，直接走登录页
+      await new Promise(s=>setTimeout(s,500));
+    }
+    if(r && r.data && r.data.connected){
+      session = { connected:true, username:r.data.username };
+      pendingResume = r.data.lastTrack || null;
+      enter();
+    } else if(r && r.data && r.data.savedUser){
+      // 有记住的账号但没自动登上（密码可能变了）：预填账号，让用户只输密码
+      $('#in-user').value = r.data.savedUser;
+    }
+  }catch(e){}
+})();
+</script>
+</body>
+</html>

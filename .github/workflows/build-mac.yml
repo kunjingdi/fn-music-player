@@ -1,0 +1,90 @@
+name: Build macOS
+
+# 在 GitHub 免费的 macOS 机器上打 .dmg，本机没有 Mac 也能出包。
+# 手动触发：仓库 Actions 页面点 "Run workflow"，或本地 gh workflow run build-mac.yml
+#
+# 为什么不用 electron-builder 一步出 dmg：
+#   没有开发者证书时它可能直接跳过签名，而 Apple 芯片要求二进制至少要有
+#   ad-hoc 签名，否则双击报"已损坏"。所以这里拆成三步：出 .app → 手工 ad-hoc
+#   签名 → hdiutil 打 dmg，全程可控。
+#
+# 为什么出 universal（通用包）：
+#   用户不用自己判断是 M 系列还是 Intel，一个包两种机器都能跑。
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'electron-main.js'
+      - 'preload.js'
+      - 'server.cjs'
+      - 'bt-smtc.cjs'
+      - 'index.html'
+      - 'package.json'
+      - 'icon.png'
+      - '.github/workflows/build-mac.yml'
+
+jobs:
+  build:
+    runs-on: macos-14
+    timeout-minutes: 40
+
+    steps:
+      - name: 取代码
+        uses: actions/checkout@v4
+
+      - name: 装 Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: 装依赖
+        run: npm ci
+
+      - name: 取版本号
+        id: meta
+        run: echo "ver=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: 构建 .app（不出 dmg）
+        run: npx electron-builder --mac --universal --dir --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: 看看产出了什么
+        run: |
+          echo "== dist =="
+          ls -la dist/ || true
+          echo "== app =="
+          find dist -maxdepth 2 -name "*.app" -type d | while read -r a; do
+            echo "$a  ($(du -sh "$a" | cut -f1))"
+          done
+
+      - name: ad-hoc 签名
+        run: |
+          APP=$(find dist -maxdepth 2 -name "*.app" -type d | head -1)
+          if [ -z "$APP" ]; then echo "!! 没找到 .app，构建失败了"; exit 1; fi
+          echo "签名目标: $APP"
+          codesign --force --deep --sign - "$APP"
+          echo "--- 验证 ---"
+          codesign --verify --deep --strict --verbose=2 "$APP" && echo "✅ 签名有效"
+          codesign -dv "$APP" 2>&1 | head -6
+
+      - name: 打 dmg
+        run: |
+          APP=$(find dist -maxdepth 2 -name "*.app" -type d | head -1)
+          APPDIR=$(dirname "$APP")
+          OUT="dist/FnMusicPlayer-${{ steps.meta.outputs.ver }}-universal.dmg"
+          echo "打包 $APP → $OUT"
+          hdiutil create -volname "FnMusicPlayer" -srcfolder "$APPDIR" \
+            -ov -format UDZO "$OUT"
+          ls -lh "$OUT"
+
+      - name: 上传产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: FnMusicPlayer-mac-dmg
+          path: dist/*.dmg
+          retention-days: 30
+          if-no-files-found: error
