@@ -201,7 +201,7 @@ function createWindow() {
     minHeight: Math.min(600, maxH),
     backgroundColor: '#081120',
     autoHideMenuBar: true,
-    title: '飞牛音乐播放器',
+    title: '咔一下子音乐',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -324,7 +324,7 @@ function createWindow() {
    ================================================================== */
 function setupMacMenu() {
   if (process.platform !== 'darwin') return;
-  const name = app.name || '飞牛音乐播放器';
+  const name = app.name || '咔一下子音乐';
   Menu.setApplicationMenu(Menu.buildFromTemplate([
     {
       label: name,

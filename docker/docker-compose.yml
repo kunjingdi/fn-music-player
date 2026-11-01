@@ -1,0 +1,65 @@
+# 咔一下子音乐 · compose 部署（一条命令起两个容器）
+#
+# ── 最快三步 ──
+#   1) 改同目录的 .env（就一行：MUSIC_DIR 指向你的音乐目录）
+#   2) docker compose pull
+#   3) docker compose up -d
+#
+#   起来后打开 http://NAS的IP:8580
+#
+# ── 两个容器 ──
+#   kxyz-music  播放器（扫目录建库、播放、客户端可发现）
+#   kxyz-dl     下载部件（搜歌下歌，下的歌直接落进曲库）
+#
+#   两者靠「自动发现」联动，不用配任何东西：播放器启动后会自己找到
+#   同机的下载部件（60 秒内），网页顶栏就多出「下载」标签。
+#
+#   下载部件的官方镜像在 Docker Hub，国内直连不通（实测 registry-1.docker.io 10 秒超时），
+#   所以默认写成飞牛镜像站的地址（实测 226MB / 6.2 秒拉完，公网可用）。
+#   如果你的网络能直连 Docker Hub，也可以换回原名 guohuiyuan/go-music-dl:latest。
+#   不想要下载功能：把 downloader 那一段整段删掉，播放器照样能用，只是没有「下载」标签。
+#
+# ── 升级 ──
+#   改下面 image 的版本号 → docker compose pull → docker compose up -d
+
+services:
+  # ══════════ 播放器 ══════════
+  web:
+    image: crpi-hafqpuc93yvr4hco.cn-hangzhou.personal.cr.aliyuncs.com/kayixiazi/kayixiazi-music:2.1.1
+    container_name: kxyz-music
+    restart: unless-stopped
+    ports:
+      - "8580:8530"                 # 客户端自动发现扫 8530/8580，别改
+    extra_hosts:
+      # 让容器能回到宿主机，用来发现宿主机上跑的下载部件
+      - "host.docker.internal:host-gateway"
+    environment:
+      TZ: Asia/Shanghai
+      MODE: full
+      MUSIC_DIRS: /music
+      # DL_BASE 故意不写：同机装了下载部件会自动发现（60 秒内）
+    volumes:
+      - ./data:/data                # 曲库索引、封面缓存，删了只是重建
+      - ${MUSIC_DIR:-./music}:/music:ro    # 只读：绝不写入、绝不删除你的歌
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8530/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # ══════════ 下载部件 ══════════
+  downloader:
+    image: docker.fnnas.com/guohuiyuan/go-music-dl:latest
+    container_name: kxyz-dl
+    restart: unless-stopped
+    ports:
+      - "28001:8080"                # 它自己的界面（管 cookie、看下载记录）
+    volumes:
+      - ./dl-data:/home/appuser/data
+      # 下载目录指向曲库里的「下载」子目录 —— 下完 30 秒内自动出现在曲库，不用搬
+      # 注意：这版下载器的下载目录是 /home/appuser/data/downloads，
+      #      不是 /app/downloads（网上有些教程写错了，照抄会下到别处）
+      - ${MUSIC_DIR:-./music}/下载:/home/appuser/data/downloads
+    environment:
+      TZ: Asia/Shanghai

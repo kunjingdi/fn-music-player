@@ -1,0 +1,44 @@
+# 构建上下文排除清单 —— 红线：密钥与个人数据绝不进镜像
+config.local.json
+settings.json
+.device_id
+
+# 依赖与打包产物
+node_modules/
+dist/
+dist_new/
+_mac_dist/
+build/
+out/
+
+# 备份与截图
+_备份/
+shots/
+shots_clean/
+_shots/
+朋友圈_*/
+docs/
+
+# 开发期临时文件
+*.exe
+*.dmg
+*.apk
+*.log
+*.bak*
+node.exe
+_*.js
+_make_icon.py
+shoot.js
+test-music/
+_tmpdata*/
+data/
+dl-data/
+
+# 版本库与文档
+.git/
+.github/
+*.md
+
+# 测试服务落盘
+library.json
+covers/

@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <!-- 触屏设备上双击 / 双指会把页面放大，整块 UI 就被顶到屏幕外去了，这里锁死缩放 -->
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover"/>
-<title>飞牛音乐 · 桌面播放器</title>
+<title>咔一下子音乐 · 桌面播放器</title>
 <style>
 :root{
   --bg-0:#081120; --bg-1:#0b2038; --bg-2:#0e3052;
@@ -101,6 +101,123 @@ input{font-family:inherit;color:inherit}
 .btn-login:disabled{opacity:.5;cursor:not-allowed;transform:none}
 .login-err{margin-top:14px;font-size:13px;color:var(--danger);min-height:18px;text-align:center}
 .login-tip{margin-top:14px;font-size:12px;color:var(--txt-faint);line-height:1.7}
+
+/* ============ 数据源开关：飞牛 / Docker ============ */
+.src-switch{display:inline-flex;padding:3px;border-radius:999px;gap:2px;
+  background:var(--input-bg);border:1px solid var(--stroke);flex:none}
+.src-switch button{padding:4px 12px;border-radius:999px;font-size:12px;font-weight:600;
+  color:var(--txt-dim);background:transparent;border:0;cursor:pointer;transition:.18s;
+  letter-spacing:.3px;white-space:nowrap}
+.src-switch button:hover{color:var(--txt)}
+.src-switch button.on{color:var(--bg-0);background:linear-gradient(135deg,var(--accent),var(--accent-3));
+  box-shadow:0 2px 10px var(--glow)}
+.login-src{display:flex;justify-content:center;margin:16px 0 20px}
+/* 服务器版（容器里自带曲库）：没有飞牛可切，源开关和退出登录都藏掉 */
+body.server-mode #src-switch-head,
+body.server-mode #src-switch-login,
+body.server-mode #btn-logout{display:none!important}
+
+/* 多了一个开关，顶栏更容易挤：品牌和标签不许折行，把挤压让给搜索框 */
+header .brand{flex:none;white-space:nowrap}
+header .tabs{flex:none}
+header .searchbox{min-width:120px;flex-shrink:1}
+header .user-chip, header .btn-logout{flex:none;white-space:nowrap}
+/* 切到 Docker 源：飞牛的四个输入框整组藏起来，本地曲库不要账号密码 */
+body.src-docker #login .fn-field{display:none}
+body.src-docker #login .login-tip{display:none}
+
+/* ============ 搜索下载页（左搜右播） ============ */
+#dl{display:none;flex:1;min-height:0;padding:16px 20px 18px;gap:16px;
+  grid-template-columns:minmax(0,1fr) 330px}
+#dl.show{display:grid}
+.dl-card{background:var(--glass);border:1px solid var(--stroke);border-radius:16px;
+  display:flex;flex-direction:column;min-height:0;overflow:hidden;backdrop-filter:blur(12px)}
+.dl-searchbar{display:flex;gap:10px;margin-bottom:14px;flex:none}
+.dl-searchbar input{flex:1;height:42px;padding:0 14px;border-radius:11px;font-size:14.5px;
+  color:var(--txt);background:var(--input-bg);border:1px solid var(--stroke);outline:none}
+.dl-searchbar input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--glow)}
+.dl-searchbar input::placeholder{color:var(--txt-faint)}
+.dl-btn{height:42px;padding:0 20px;border-radius:11px;border:0;cursor:pointer;font-size:14px;font-weight:600;
+  color:var(--bg-0);background:linear-gradient(135deg,var(--accent),var(--accent-3));transition:.15s;white-space:nowrap}
+.dl-btn:hover{filter:brightness(1.08)}
+.dl-btn:disabled{opacity:.45;cursor:not-allowed}
+.dl-btn.ghost{background:transparent;color:var(--txt-dim);border:1px solid var(--stroke);font-weight:500}
+.dl-btn.ghost:hover{color:var(--txt);border-color:var(--stroke-strong)}
+.dl-head{display:flex;align-items:center;gap:9px;padding:11px 14px;border-bottom:1px solid var(--stroke);
+  font-size:12.5px;color:var(--txt-dim);flex:none}
+.dl-head b{color:var(--txt);font-size:13px;font-weight:600}
+.dl-head .sp{flex:1}
+.dl-mini{height:26px;padding:0 11px;border-radius:8px;border:1px solid var(--stroke);background:transparent;
+  color:var(--accent);font-size:12px;cursor:pointer;white-space:nowrap}
+.dl-mini:hover{border-color:var(--accent)}
+.dl-mini.on{background:var(--accent);border-color:var(--accent);color:var(--bg-0);font-weight:600}
+.dl-mini.solid{background:linear-gradient(135deg,var(--accent),var(--accent-3));border:0;color:var(--bg-0);font-weight:600}
+.dl-scroll{flex:1;min-height:0;overflow-y:auto;padding:8px}
+/* 结果区多列：歌名不长，宽屏三列、中屏两列、窄屏一列，同样 65 条能少滚一大截 */
+#dl-results{display:grid;grid-template-columns:repeat(auto-fill,minmax(292px,1fr));
+  gap:4px;align-content:start}
+#dl-results > .dl-empty{grid-column:1/-1}
+.dl-allbox{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--txt-dim);cursor:pointer;
+  padding:3px 8px;border-radius:7px;border:1px solid transparent}
+.dl-allbox:hover{border-color:var(--stroke);color:var(--txt)}
+.dl-allbox input{width:14px;height:14px;accent-color:var(--accent);cursor:pointer;margin:0}
+.dl-empty{padding:40px 14px;text-align:center;color:var(--txt-faint);font-size:13px;line-height:2}
+.dl-empty span{font-size:12px}
+.dl-row{display:grid;grid-template-columns:16px minmax(0,1fr) auto auto;gap:8px;align-items:center;
+  padding:7px 8px;border-radius:9px;border:1px solid transparent;cursor:default}
+.dl-row:hover{background:var(--glass-strong)}
+.dl-row.sel{background:var(--glass-strong);border-color:var(--accent)}
+.dl-row input[type=checkbox]{width:14px;height:14px;accent-color:var(--accent);cursor:pointer;margin:0}
+.dl-row .m{min-width:0}
+.dl-row .m .t{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dl-row .m .s{font-size:11px;color:var(--txt-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dl-src{font-size:10px;color:var(--txt-dim);border:1px solid var(--stroke);border-radius:5px;padding:0 5px;line-height:15px}
+.dl-get{height:25px;padding:0 10px;border-radius:7px;font-size:11.5px;cursor:pointer;border:0;
+  color:var(--bg-0);background:linear-gradient(135deg,var(--accent),var(--accent-3));font-weight:600}
+.dl-get:disabled{opacity:.5;cursor:default}
+.dl-get.on{background:transparent;color:var(--txt-faint);border:1px solid var(--stroke)}
+
+/* 右侧：迷你播放器 + 队列 */
+.dl-side{display:flex;flex-direction:column;gap:14px;min-height:0}
+.dl-np{padding:14px}
+.dl-np-top{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+.dl-np-cover{width:56px;height:56px;border-radius:11px;overflow:hidden;flex:none;position:relative;
+  background:linear-gradient(135deg,var(--bg-1),var(--bg-2));display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--stroke)}
+.dl-np-cover .ph{color:var(--txt-faint);font-size:20px}
+.dl-np-cover img{width:100%;height:100%;object-fit:cover}
+.dl-np-meta{min-width:0;flex:1}
+.dl-np-title{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dl-np-artist{font-size:12px;color:var(--txt-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.dl-bar{height:5px;border-radius:3px;background:var(--glass-strong);cursor:pointer;position:relative;overflow:hidden}
+.dl-bar .fill{height:100%;width:0;border-radius:3px;
+  background:linear-gradient(90deg,var(--accent),var(--accent-3));transition:width .12s linear}
+.dl-times{display:flex;justify-content:space-between;font-size:11px;color:var(--txt-faint);margin-top:5px}
+.dl-controls{display:flex;justify-content:center;align-items:center;gap:14px;margin-top:12px}
+.dl-ctrl{width:36px;height:36px;border-radius:50%;border:1px solid var(--stroke);background:var(--glass);
+  color:var(--txt);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
+.dl-ctrl:hover{border-color:var(--accent);color:var(--accent)}
+.dl-ctrl.play{width:44px;height:44px;font-size:16px;color:var(--bg-0);border:0;
+  background:linear-gradient(135deg,var(--accent),var(--accent-3))}
+.dl-queue-panel{flex:1;min-height:0}
+.dl-qsum{display:flex;gap:12px;padding:8px 14px;font-size:11.5px;color:var(--txt-dim);
+  border-bottom:1px solid var(--stroke);flex:none}
+.dl-qsum b{color:var(--txt)}
+.dl-task{padding:8px;border-radius:10px;display:grid;gap:5px}
+.dl-task + .dl-task{margin-top:3px}
+.dl-task .tt{display:flex;gap:8px;align-items:baseline;font-size:12.5px}
+.dl-task .tt .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dl-st{font-size:10.5px;padding:1px 7px;border-radius:5px;white-space:nowrap}
+.dl-st.waiting{color:var(--txt-dim);background:var(--glass-strong)}
+.dl-st.downloading{color:var(--accent);background:var(--glow)}
+.dl-st.done{color:#37d67a;background:rgba(55,214,122,.15)}
+.dl-st.failed{color:var(--danger);background:rgba(255,107,122,.15)}
+.dl-st.other{color:var(--txt-faint);background:var(--glass)}
+.dl-tbar{height:3px;border-radius:2px;background:var(--glass-strong);overflow:hidden}
+.dl-tbar i{display:block;height:100%;width:38%;border-radius:2px;
+  background:linear-gradient(90deg,var(--accent),var(--accent-3));animation:dlrun 1.3s linear infinite}
+@keyframes dlrun{0%{transform:translateX(-105%)}100%{transform:translateX(260%)}}
+@media (max-width:1000px){#dl.show{grid-template-columns:1fr;grid-auto-rows:minmax(0,1fr)}}
 
 /* ============ 主界面 ============ */
 #app{position:fixed;inset:0;display:none;flex-direction:column}
@@ -2137,6 +2254,34 @@ body.skin-lumen[data-lmtri] .lm-dot.on{box-shadow:0 0 0 2px #ffd21a, 0 0 14px rg
 .cp-status.ok{color:var(--accent)}
 .cp-status.err{color:var(--danger)}
 
+/* —— Docker 曲库：自动搜索 —— */
+.docker-row{display:flex; gap:8px; align-items:center}
+.docker-row input{flex:1; min-width:0}
+.btn-scan{flex:none; padding:0 14px; height:38px; border-radius:9px; border:1px solid var(--stroke);
+  background:transparent; color:var(--txt); font-size:13px; cursor:pointer; white-space:nowrap;
+  transition:border-color .2s, color .2s, background .2s}
+.btn-scan:hover{border-color:var(--accent); color:var(--accent)}
+.btn-scan:disabled{opacity:.5; cursor:default}
+.btn-scan.busy{position:relative; color:transparent}
+.btn-scan.busy::after{content:""; position:absolute; left:50%; top:50%; width:14px; height:14px;
+  margin:-7px 0 0 -7px; border-radius:50%; border:2px solid var(--stroke);
+  border-top-color:var(--accent); animation:scan-spin .7s linear infinite}
+@keyframes scan-spin{to{transform:rotate(360deg)}}
+.scan-list{display:flex; flex-direction:column; gap:6px; margin-top:8px}
+.scan-item{display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:8px;
+  border:1px solid var(--stroke); cursor:pointer; font-size:12.5px; line-height:1.5;
+  transition:border-color .18s, background .18s}
+.scan-item:hover{border-color:var(--accent); background:rgba(127,127,127,.06)}
+.scan-item.on{border-color:var(--accent); background:rgba(127,127,127,.09)}
+.scan-item .si-ico{flex:none; width:8px; height:8px; border-radius:50%; background:var(--accent)}
+.scan-item .si-main{flex:1; min-width:0}
+.scan-item .si-name{color:var(--txt); font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.scan-item .si-addr{color:var(--txt-dim); font-size:11.5px; font-family:ui-monospace,Consolas,monospace}
+.scan-item .si-cnt{flex:none; color:var(--txt-dim); font-size:11.5px;
+  white-space:nowrap; text-align:right; min-width:56px}
+.scan-tip{font-size:11.5px; color:var(--txt-dim); margin-top:6px; line-height:1.6}
+.scan-tip.err{color:var(--danger)}
+.scan-tip.ok{color:var(--accent)}
 </style>
 </head>
 <body>
@@ -2145,19 +2290,32 @@ body.skin-lumen[data-lmtri] .lm-dot.on{box-shadow:0 0 0 2px #ffd21a, 0 0 14px rg
 <div id="login">
   <div class="login-card">
     <div class="logo"><div class="disc"></div>
-      <h1>飞牛音乐<small>FN MUSIC DESKTOP</small></h1>
+      <h1>咔一下子音乐<small>KA YIXIAZI MUSIC</small></h1>
     </div>
-    <div class="field"><label>飞牛 NAS 地址</label>
+    <div class="login-src">
+      <div class="src-switch" id="src-switch-login">
+        <button data-src="fnos">飞牛</button><button data-src="docker">Docker</button>
+      </div>
+    </div>
+    <div class="field fn-field"><label>飞牛 NAS 地址</label>
       <input id="in-base" placeholder="如 192.168.1.10:5666 或 https://music.example.com" spellcheck="false"/>
     </div>
-    <div class="field"><label>飞牛音乐账号</label>
+    <div class="field fn-field"><label>飞牛音乐账号</label>
       <input id="in-user" placeholder="你的飞牛系统账号" autocomplete="off" spellcheck="false"/>
     </div>
-    <div class="field"><label>密码</label>
+    <div class="field fn-field"><label>密码</label>
       <input id="in-pass" type="password" placeholder="和飞牛系统/SSH 密码一致" autocomplete="off"/>
     </div>
-    <div class="field"><label>访问码（可选，NAS 开启访问码保护时才填）</label>
+    <div class="field fn-field"><label>访问码（可选，NAS 开启访问码保护时才填）</label>
       <input id="in-code" placeholder="留空即可" autocomplete="off"/>
+    </div>
+    <div class="field docker-field"><label id="lb-docker">Docker 曲库地址（可选）</label>
+      <div class="docker-row">
+        <input id="in-docker" placeholder="点右边「自动搜索」，或手动填 http://192.168.1.100:8580" spellcheck="false"/>
+        <button class="btn-scan" id="btn-scan" type="button">自动搜索</button>
+      </div>
+      <div class="scan-list" id="scan-list"></div>
+      <div class="scan-tip" id="scan-tip"></div>
     </div>
     <button class="btn-login" id="btn-login">连接并登录</button>
     <div class="login-err" id="login-err"></div>
@@ -2168,10 +2326,15 @@ body.skin-lumen[data-lmtri] .lm-dot.on{box-shadow:0 0 0 2px #ffd21a, 0 0 14px rg
 <!-- 主界面 -->
 <div id="app">
   <header>
-    <div class="brand"><span class="dot"></span>飞牛音乐<span class="brand-sub"> · 桌面播放器</span></div>
+    <div class="brand"><span class="dot"></span>咔一下子音乐<span class="brand-sub"> · 服务器</span></div>
     <div class="tabs">
       <button class="tab active" data-view="player">播放器</button>
       <button class="tab" data-view="library">曲库</button>
+      <button class="tab" data-view="dl">下载</button>
+    </div>
+    <!-- 数据源：飞牛 NAS / Docker 本地曲库 -->
+    <div class="src-switch" id="src-switch-head">
+      <button data-src="fnos">飞牛</button><button data-src="docker">Docker</button>
     </div>
     <div class="spacer"></div>
     <!-- 蓝牙音箱：把歌名/歌手/封面（可选当前歌词句）发到系统媒体会话 -->
@@ -2268,6 +2431,60 @@ body.skin-lumen[data-lmtri] .lm-dot.on{box-shadow:0 0 0 2px #ffd21a, 0 0 14px rg
       </div>
     </section>
 
+    <!-- 搜索下载：左边搜歌，右边边听边等下载 -->
+    <section id="dl">
+      <div style="display:flex;flex-direction:column;min-height:0;gap:0">
+        <div class="dl-searchbar">
+          <input id="dl-q" placeholder="搜歌名 / 歌手 / 专辑，回车搜索" autocomplete="off" spellcheck="false"/>
+          <button class="dl-btn" id="dl-go">搜索</button>
+        </div>
+        <div class="dl-card" style="flex:1;min-height:0">
+          <div class="dl-head">
+            <label class="dl-allbox" title="全选当前结果">
+              <input type="checkbox" id="dl-allbox"/><span>全选</span>
+            </label>
+            <span id="dl-count"></span>
+            <div class="sp"></div>
+            <button class="dl-mini" id="dl-nolive" title="过滤掉 Live / 现场 / 演唱会版本">排除 Live</button>
+            <button class="dl-mini solid" id="dl-dl-sel" style="display:none">下载选中</button>
+            <button class="dl-mini" id="dl-all" style="display:none">全部下载</button>
+          </div>
+          <div class="dl-scroll" id="dl-results">
+            <div class="dl-empty">输入关键词开始搜索<br><span>下完的歌会存进你的曲库目录</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dl-side">
+        <div class="dl-card dl-np">
+          <div class="dl-np-top">
+            <div class="dl-np-cover"><div class="ph" id="dl-cover-ph">♪</div><img id="dl-cover-img" alt="" style="display:none"/></div>
+            <div class="dl-np-meta">
+              <div class="dl-np-title" id="dl-np-title">暂无播放</div>
+              <div class="dl-np-artist" id="dl-np-artist">在曲库里点一首开始</div>
+            </div>
+          </div>
+          <div class="dl-bar" id="dl-bar"><div class="fill" id="dl-bar-fill"></div></div>
+          <div class="dl-times"><span id="dl-t-cur">0:00</span><span id="dl-t-dur">0:00</span></div>
+          <div class="dl-controls">
+            <button class="dl-ctrl" id="dl-prev" title="上一曲">⏮</button>
+            <button class="dl-ctrl play" id="dl-play" title="播放/暂停">▶</button>
+            <button class="dl-ctrl" id="dl-next" title="下一曲">⏭</button>
+          </div>
+        </div>
+
+        <div class="dl-card dl-queue-panel">
+          <div class="dl-head"><b>下载队列</b><div class="sp"></div><span id="dl-q-total"></span></div>
+          <div class="dl-qsum" id="dl-qsum" style="display:none">
+            <span>等待 <b id="dl-c-wait">0</b></span>
+            <span>进行中 <b id="dl-c-run">0</b></span>
+            <span>完成 <b id="dl-c-done">0</b></span>
+          </div>
+          <div class="dl-scroll" id="dl-queue"><div class="dl-empty">队列是空的</div></div>
+        </div>
+      </div>
+    </section>
+
     <!-- 曲库 -->
     <section id="library">
       <div class="lib-tabs">
@@ -2300,7 +2517,7 @@ body.skin-lumen[data-lmtri] .lm-dot.on{box-shadow:0 0 0 2px #ffd21a, 0 0 14px rg
       <div class="cp-row" style="margin-top:8px">
         <button class="cp-btn sm" id="cp-bt-repush">重推到音箱</button>
       </div>
-      <div class="cp-hint">设备上只显示"应用名"（比如「飞牛音乐 · 桌面播放器」）= 它没收到标题，只拿到应用名。<b>点「重推到音箱」</b>会先清空元数据再重发一遍，多数设备靠这个把 Now Playing 重建出来。<br/>蓝牙只有一条"元数据"通道（AVRCP）：歌名歌手一定能到，封面要设备支持 <b>AVRCP 1.6</b>，歌词协议里根本没有——所以用"当前歌词句冒充歌名、真歌名挪到专辑位"这个土办法。</div>
+      <div class="cp-hint">设备上只显示"应用名"（比如「咔一下子音乐 · 桌面播放器」）= 它没收到标题，只拿到应用名。<b>点「重推到音箱」</b>会先清空元数据再重发一遍，多数设备靠这个把 Now Playing 重建出来。<br/>蓝牙只有一条"元数据"通道（AVRCP）：歌名歌手一定能到，封面要设备支持 <b>AVRCP 1.6</b>，歌词协议里根本没有——所以用"当前歌词句冒充歌名、真歌名挪到专辑位"这个土办法。</div>
     </div>
   </div>
 </div>
@@ -2313,6 +2530,20 @@ body.skin-lumen[data-lmtri] .lm-dot.on{box-shadow:0 0 0 2px #ffd21a, 0 0 14px rg
 const $ = (s) => document.querySelector(s);
 const audio = $('#audio');
 let session = { connected:false, username:'' };
+
+/* ============ 数据源：fnos = 飞牛 NAS，docker = 本地曲库 ============
+   两套接口路径完全一样，只换前缀 —— 所以下面所有请求都写成 P() + '/xxx' */
+let SRC = 'fnos';
+try{ const s=localStorage.getItem('fn:src'); if(s==='docker'||s==='fnos') SRC=s; }catch(e){}
+const P = () => SRC==='docker' ? '/api/d' : '/api/p';
+/* 一次拉多少首：飞牛源维持原来的 300；本地曲库自己扫的，一次拉全（804 首也只 300KB） */
+const LIST_SIZE = () => SRC==='docker' ? 5000 : 300;
+let fnosConnected = false;        // 飞牛会话是否已登录（切源时不能混用）
+let dockerBaseAddr = '';          // 桌面版填过的远程曲库地址（仅用于回填输入框）
+// 待恢复的播放进度（不自动播放）。飞牛源用它续播，本地曲库一律置空。
+// ⚠ 这个声明必须存在：下面多处直接赋值，缺了会在严格模式下抛 ReferenceError，
+//   而且是启动流程里的第一次赋值 —— 一抛整页初始化就断了，表现是「卡在登录页」。
+let pendingResume = null;
 
 /* ============ 工具 ============ */
 function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2600); }
@@ -2340,14 +2571,17 @@ function dataList(d, keys=['tracks','list','items','rows','albums','artists','pl
 
 /* ============ 登录 ============ */
 $('#btn-login').addEventListener('click', async ()=>{
+  if(SRC==='docker') return enterDocker();     // 本地曲库不走账号密码
   const base=$('#in-base').value, username=$('#in-user').value, password=$('#in-pass').value, accessCode=$('#in-code').value;
   const err=$('#login-err');
   if(!base||!username||!password){ err.textContent='请填写地址、账号、密码'; return; }
   const btn=$('#btn-login'); btn.disabled=true; btn.textContent='连接中…'; err.textContent='';
   try{
-    const r = await api('/api/connect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base,username,password,accessCode})});
+    const r = await api('/api/connect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base,username,password,accessCode,dockerBase:($('#in-docker').value||'').trim()})});
     if(r && r.code===0){
       session={connected:true,username:r.data.username||username};
+      fnosConnected = true;
+      dockerBaseAddr = ($('#in-docker').value||'').trim();
       enter();
     } else {
       err.textContent = (r&&r.msg) ? mapErr(r.msg) : '登录失败';
@@ -2359,11 +2593,270 @@ function mapErr(msg){
   if(/unauthorized|token/i.test(msg)) return '账号或密码错误，或签名校验失败';
   return msg;
 }
+
+/* ============ 数据源切换 ============ */
+function applySrcUI(){
+  document.body.classList.toggle('src-docker', SRC==='docker');
+  document.querySelectorAll('#src-switch-login button, #src-switch-head button').forEach(b=>{
+    b.classList.toggle('on', b.dataset.src===SRC);
+  });
+  const btn=$('#btn-login');
+  if(btn) btn.textContent = SRC==='docker' ? '进入本地曲库' : '连接并登录';
+  const lb=$('#lb-docker');
+  if(lb) lb.textContent = SRC==='docker' ? 'Docker 曲库地址（容器内留空即可）' : 'Docker 曲库地址（可选）';
+}
+applySrcUI();
+
+/* 探活：本地曲库这条路到底通不通（容器自己带 / 桌面版反代到 NAS） */
+async function probeDocker(){
+  try{
+    const r = await fetch(P()+'/track/list?page=1&size=1');
+    if(r.ok) return true;
+    let msg='本地曲库不可用';
+    try{ const j=await r.json(); if(j && j.msg) msg=j.msg; }catch(e){}
+    $('#login-err').textContent = msg;
+    return false;
+  }catch(e){
+    $('#login-err').textContent = '连不上本地曲库：'+e.message;
+    return false;
+  }
+}
+
+/* 切源必须把播放态清干净，否则会出现"歌单是飞牛的、播放地址是 Docker 的" */
+function resetPlayback(){
+  try{ stopAndCleanup(); }catch(e){}
+  try{ audio.pause(); }catch(e){}
+  audio.removeAttribute('src');
+  try{ audio.load(); }catch(e){}
+  queue=[]; qIndex=-1; currentTrack=null; allTracks=[];
+  try{ lyricLines=[]; }catch(e){}
+  const li=$('#lyricInner'); if(li) li.innerHTML='<div class="lyric-line no-lyric">暂无歌词</div>';
+  $('#np-title').textContent='暂无播放'; $('#np-artist').textContent='—'; $('#t-dur').textContent='0:00';
+  $('#btn-play').textContent='▶'; setSpin(false);
+  setCover('cover-img','cover-ph',''); setCover('cover-card-img','cover-card-ph','');
+  setCover('tape-img','tape-ph','');
+  const tt=$('#tape-ttl'); if(tt) tt.textContent='未在播放';
+  const box=$('#lib-content'); if(box) box.innerHTML='';
+}
+
+function showLogin(msg){
+  $('#app').style.display='none'; $('#login').style.display='flex';
+  $('#login-err').textContent = msg || '';
+  applySrcUI();
+}
+
+/* 进本地曲库：不需要账号密码，但桌面版要先告诉服务端"NAS 上的曲库在哪" */
+async function enterDocker(){
+  const err=$('#login-err'), btn=$('#btn-login');
+  err.textContent='';
+  const addr = ($('#in-docker').value||'').trim();
+  btn.disabled=true; const old=btn.textContent; btn.textContent='连接中…';
+  try{
+    if(addr && addr!==dockerBaseAddr){
+      const r = await api('/api/docker-base',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dockerBase:addr})});
+      /* 服务端现在存地址前会先问「你是不是曲库」。
+         填错（自己电脑的 IP、投影仪的 IP、只有下载没有曲库的容器）当场被拒，
+         以前是照存不误、界面显示「已连接」，之后所有请求 503，看不出问题在哪。 */
+      if(r && r.code !== 0){
+        err.textContent = r.msg || '这台不能当曲库';
+        return;
+      }
+      dockerBaseAddr = addr;
+      rememberNodePick(addr);
+    }
+    if(!await probeDocker()) return;
+    session = { connected:true, username:'本地曲库' };
+    pendingResume = null;              // 进度记忆是飞牛那套，本地曲库不套用
+    enter();
+  }catch(e){
+    err.textContent='连不上本地曲库：'+e.message;
+  }finally{
+    btn.disabled=false; btn.textContent=old; applySrcUI();
+  }
+}
+
+/* ============ Docker 曲库：局域网自动搜索 ============ */
+let scanBusy = false;
+const DOCKER_MIN_LIB = 20;          // 低于这个数当空壳看，不抢默认位
+
+function savedNodePick(){ try{ return localStorage.getItem('fn:dockerPick')||''; }catch(e){ return ''; } }
+function rememberNodePick(base){ try{ localStorage.setItem('fn:dockerPick', base||''); }catch(e){} }
+
+/* 和服务端 discoverServers() 同一套规则：有效节点（>=20 首）按 IP 数值升序，
+   空壳垫底。前端再排一次是防御——万一用户跑的是没重启的旧服务端，
+   也不能因为返回顺序不同就把一台 6 首的测试容器当默认。 */
+function sortNodes(list){
+  const ipNum = h => {
+    const m = String(h||'').match(/(\d+)\.(\d+)\.(\d+)\.(\d+)/);
+    if(!m) return 1e15;
+    return (+m[1])*16777216 + (+m[2])*65536 + (+m[3])*256 + (+m[4]);
+  };
+  const byIp = (a,b)=> (ipNum(a.host||a.base) - ipNum(b.host||b.base)) || ((a.port||0)-(b.port||0));
+  const good=[], junk=[];
+  (list||[]).forEach(s=>((s.libCount||0)>=DOCKER_MIN_LIB?good:junk).push(s));
+  good.sort(byIp); junk.sort(byIp);
+  return good.concat(junk);
+}
+
+/* 列表里给每台一句人话：索引中 / 空曲库 / ⚠ 只有几首 / 多少首 */
+function nodeCountText(s){
+  const n = s.libCount || 0;
+  if(s.libReady === false) return '索引中…';
+  if(n === 0) return '空曲库';
+  if(n < DOCKER_MIN_LIB) return '⚠ 只有 ' + n + ' 首';
+  return n + ' 首';
+}
+
+/* 渲染扫描结果。
+   默认选中规则（和 TV 端一致）：上次手动挑过的那台优先，否则第一台
+   （排序后第一台就是「IP 数值最小的有效节点」）。
+   autoSel=false 时不预选，只铺列表。 */
+function renderScanList(servers, tipText, tipCls, autoSel){
+  const box=$('#scan-list'), tip=$('#scan-tip');
+  if(!box) return;
+  box.innerHTML='';
+  const list = (servers && servers.length) ? sortNodes(servers) : [];
+
+  let pickIdx = -1;
+  if(list.length && autoSel !== false){
+    const saved = savedNodePick();
+    pickIdx = saved ? list.findIndex(s=>s.base===saved) : -1;
+    if(pickIdx < 0) pickIdx = 0;
+  }
+
+  list.forEach((s,i)=>{
+    const d=document.createElement('div');
+    d.className='scan-item' + (i===pickIdx ? ' on' : '');
+    const star = (i===pickIdx) ? '★ ' : '';
+    d.innerHTML = '<span class="si-ico"></span>'
+      + '<span class="si-main"><span class="si-name">'+esc(star)+(esc(s.name||'咔一下子音乐'))+'</span>'
+      + '<span class="si-addr">'+esc(String(s.base||'').replace(/^https?:\/\//,''))+'</span></span>'
+      + '<span class="si-cnt">'+esc(nodeCountText(s))+'</span>';
+    d.onclick = async ()=>{
+      box.querySelectorAll('.scan-item').forEach(x=>x.classList.remove('on'));
+      d.classList.add('on');
+      // 只填输入框，别动 dockerBaseAddr —— 保存交给 enterDocker 里那次 POST
+      const el=$('#in-docker');
+      if(el) el.value = s.base;
+      rememberNodePick(s.base);        // 选了就记住，下次默认还是它
+      if(tip){
+        tip.textContent = '已选 ' + String(s.base||'').replace(/^https?:\/\//,'')
+          + '，点下面「进入本地曲库」';
+        tip.className='scan-tip ok';
+      }
+    };
+    box.appendChild(d);
+  });
+
+  // 预选那台同步填进输入框，用户不点直接按按钮也能连
+  if(pickIdx >= 0){
+    const el=$('#in-docker');
+    if(el) el.value = list[pickIdx].base;
+  }
+
+  if(tip){
+    tip.textContent = tipText || '';
+    tip.className = 'scan-tip' + (tipCls ? ' '+tipCls : '');
+  }
+}
+
+/* autoEnter=true：找到一个就直接进，不用用户再点（「自动搜索绑定」） */
+async function scanDocker(autoEnter){
+  if(scanBusy) return false;
+  scanBusy = true;
+  const btn=$('#btn-scan');
+  if(btn){ btn.disabled=true; btn.classList.add('busy'); }
+  renderScanList([], '正在搜索同网段的 Docker 曲库，约 5 秒…');
+  try{
+    const r = await api('/api/discover');
+    const d = (r && r.data) || {};
+    const list = d.servers || [];
+    if(!list.length){
+      renderScanList([], d.reason || '没搜到。请确认容器已启动，或手动填写地址。', 'err');
+      return false;
+    }
+    const sorted = sortNodes(list);
+    // 只有一个 → 自动填好并进入
+    if(sorted.length===1 && autoEnter){
+      renderScanList(sorted, '已找到，正在连接…', 'ok');
+      // 注意：这里只写输入框，不写 dockerBaseAddr。
+      // 写了的话 enterDocker 会以为"已经保存过"而跳过 POST，服务端拿不到地址 → 503。
+      const el=$('#in-docker'); if(el) el.value = sorted[0].base;
+      await enterDocker();
+      return true;
+    }
+    /* 多台时不替用户拍板：铺开列表，第一台（IP 最小的有效节点）预先标 ★ 并填进输入框，
+       用户点哪台就换哪台。默认值只是默认值，连不连、连谁由他定。 */
+    const first = sorted[0];
+    const firstAddr = String(first && first.base || '').replace(/^https?:\/\//,'');
+    renderScanList(sorted,
+      '找到 ' + sorted.length + ' 台 · 默认 ★' + firstAddr + '，点一台换掉它'
+        + (autoEnter ? '' : '，再点下面的按钮'),
+      'ok');
+    return true;
+  }catch(e){
+    renderScanList([], '搜索出错：'+e.message, 'err');
+    return false;
+  }finally{
+    scanBusy=false;
+    if(btn){ btn.disabled=false; btn.classList.remove('busy'); }
+  }
+}
+
+/* 切源入口：登录页和头部共用 */
+async function switchSource(next){
+  if(next!==SRC) {
+    SRC = next==='docker' ? 'docker' : 'fnos';
+    try{ localStorage.setItem('fn:src',SRC); }catch(e){}
+  }
+  applySrcUI();
+  const inApp = $('#app').style.display !== 'none';
+  if(inApp) resetPlayback();
+
+  if(SRC==='docker'){
+    // ① 容器自己带曲库（libEnabled）或者已经填过地址 → 直接探活
+    if(await probeDocker()){
+      session = { connected:true, username:'本地曲库' };
+      pendingResume = null;
+      enter();
+      return;
+    }
+    // ② 没有地址 / 连不上 → 自动搜一遍同网段，搜到就绑上，不用密码
+    const hit = await scanDocker(true);
+    if(hit) return;                       // scanDocker 内部已经 enterDocker
+    $('#login-err').textContent = '';
+    showLogin();
+    return;
+  }
+
+  // 回到飞牛源：之前登录过就直接进，否则走登录
+  if(fnosConnected){
+    session = { connected:true, username:session.username && session.username!=='本地曲库' ? session.username : $('#in-user').value };
+    enter();
+  } else {
+    showLogin('');
+  }
+}
+
+document.querySelectorAll('#src-switch-login button, #src-switch-head button').forEach(b=>{
+  b.addEventListener('click', ()=>switchSource(b.dataset.src));
+});
+const _scanBtn = $('#btn-scan');
+if(_scanBtn) _scanBtn.addEventListener('click', ()=>scanDocker(false));
 $('#in-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') $('#btn-login').click(); });
 
 function enter(){
   $('#login').style.display='none'; $('#app').style.display='flex';
-  $('#username').textContent=session.username;
+  /* Docker 模式下把「连的是哪台」直接写在名字后面。
+     网段里同时跑着两台容器时（NAS 上的正式库 + 电脑上的测试库），
+     只写「本地曲库」等于什么都没说，出了问题根本不知道在查谁。 */
+  let who = session.username;
+  if(SRC==='docker'){
+    const el = $('#in-docker');
+    const addr = String(((el && el.value) || dockerBaseAddr || '')).trim().replace(/^https?:\/\//,'');
+    if(addr) who = (session.username || '本地曲库') + ' · ' + addr;
+  }
+  $('#username').textContent = who;
   $('#avatar').textContent=(session.username||'F').charAt(0).toUpperCase();
   if(!raf) drawViz();
   loadTracks();
@@ -2381,7 +2874,7 @@ function resumePending(){
   };
   currentTrack = fake;
   renderNowPlaying();
-  audio.src = '/api/p/track/stream?guid='+encodeURIComponent(t.guid);
+  audio.src = P()+'/track/stream?guid='+encodeURIComponent(t.guid);
   // 等元数据加载出来后 seek 到断点（不 play）
   const seekOnce = () => {
     if(t.time>0) audio.currentTime = t.time;
@@ -2401,13 +2894,18 @@ document.querySelectorAll('header .tab').forEach(t=>t.addEventListener('click',(
   const v=t.dataset.view;
   $('#player').style.display = v==='player'?'flex':'none';
   $('#library').style.display = v==='library'?'flex':'none';
+  // 下载页用 class 控制（display:grid），别用行内 style，否则会盖掉皮肤样式
+  const dlv=$('#dl'); if(dlv) dlv.classList.toggle('show', v==='dl');
+  if(v==='dl'){ try{ dlRefreshQueue(); dlSyncNow(); }catch(e){} }
 }));
 $('#btn-logout').addEventListener('click', async ()=>{
   saveProgressNow();
   try{ await api('/api/logout',{method:'POST'}); }catch(e){}
   stopAndCleanup();
   session={connected:false,username:''};
-  $('#app').style.display='none'; $('#login').style.display='flex';
+  fnosConnected = false;
+  resetPlayback();
+  showLogin('');
   $('#in-pass').value='';
 });
 
@@ -2428,7 +2926,7 @@ document.querySelectorAll('#library .tab').forEach(t=>t.addEventListener('click'
 async function loadTracks(){
   const box=$('#lib-content');
   box.innerHTML='<div class="loading">加载中…</div>';
-  const r = await api('/api/p/track/list?page=1&size=300');
+  const r = await api(P()+'/track/list?page=1&size='+LIST_SIZE());
   if(r && r.code!==0 && r.code!==undefined){ box.innerHTML='<div class="empty">加载失败：'+(r.msg||'')+'</div>'; return; }
   const list = dataList(r&&r.data ? r.data : r);
   allTracks = list;
@@ -2450,7 +2948,7 @@ function normalizeTrack(t){
     isFavorite: !!t.isFavorite,
   };
 }
-function coverUrl(id){ return id ? ('/api/p/static/cover?coverId='+encodeURIComponent(id)) : ''; }
+function coverUrl(id){ return id ? (P()+'/static/cover?coverId='+encodeURIComponent(id)) : ''; }
 
 function renderTracks(list){
   const box=$('#lib-content');
@@ -2475,11 +2973,11 @@ async function loadLibrary(){
   const box=$('#lib-content'); box.innerHTML='<div class="loading">加载中…</div>';
   let r, list, html='';
   try{
-    if(libMode==='tracks'){ r=await api('/api/p/track/list?page=1&size=300'); list=dataList(r.data); allTracks=list; setQueue(list); renderTracks(list); return; }
-    if(libMode==='albums'){ r=await api('/api/p/album/list?page=1&size=100'); list=dataList(r.data); html=gridHTML(list,'album',a=>a.name||a.title,a=>a.artists?.map(x=>x.name).join('/')||a.artist||''); }
-    else if(libMode==='artists'){ r=await api('/api/p/artist/list-all'); list=dataList(r.data); html=gridHTML(list,'artist',a=>a.name||a.title,()=>''); }
-    else if(libMode==='playlists'){ r=await api('/api/p/playlist/list'); list=dataList(r.data); html=gridHTML(list,'playlist',p=>p.name||p.title,p=>p.trackCount?p.trackCount+' 首':''); }
-    else if(libMode==='favorites'){ r=await api('/api/p/favorite-track/list?page=1&size=300'); list=dataList(r.data); renderTracks(list); return; }
+    if(libMode==='tracks'){ r=await api(P()+'/track/list?page=1&size='+LIST_SIZE()); list=dataList(r.data); allTracks=list; setQueue(list); renderTracks(list); return; }
+    if(libMode==='albums'){ r=await api(P()+'/album/list?page=1&size=100'); list=dataList(r.data); html=gridHTML(list,'album',a=>a.name||a.title,a=>a.artists?.map(x=>x.name).join('/')||a.artist||''); }
+    else if(libMode==='artists'){ r=await api(P()+'/artist/list-all'); list=dataList(r.data); html=gridHTML(list,'artist',a=>a.name||a.title,()=>''); }
+    else if(libMode==='playlists'){ r=await api(P()+'/playlist/list'); list=dataList(r.data); html=gridHTML(list,'playlist',p=>p.name||p.title,p=>p.trackCount?p.trackCount+' 首':''); }
+    else if(libMode==='favorites'){ r=await api(P()+'/favorite-track/list?page=1&size=300'); list=dataList(r.data); renderTracks(list); return; }
   }catch(e){ box.innerHTML='<div class="empty">加载失败：'+(e && e.message ? esc(e.message) : '网络错误')+'</div>'; return; }
   if(r && r.code!==0 && r.code!==undefined){ box.innerHTML='<div class="empty">加载失败：'+(r.msg||'')+'</div>'; return; }
   box.innerHTML = html || '<div class="empty">暂无内容</div>';
@@ -2500,9 +2998,9 @@ function gridHTML(list, type, nameFn, subFn){
 async function openDetail(type, guid){
   const box=$('#lib-content'); box.innerHTML='<div class="loading">加载中…</div>';
   let r, list;
-  if(type==='album'){ r=await api('/api/p/track/album-detail/list?albumGUID='+encodeURIComponent(guid)+'&page=1&size=300'); list=dataList(r.data); renderTracks(list); }
-  else if(type==='artist'){ r=await api('/api/p/track/artist-detail/list?artistGUID='+encodeURIComponent(guid)+'&page=1&size=300'); list=dataList(r.data); renderTracks(list); }
-  else if(type==='playlist'){ r=await api('/api/p/track/playlist-detail/list?playlistGUID='+encodeURIComponent(guid)+'&page=1&size=300'); list=dataList(r.data); renderTracks(list); }
+  if(type==='album'){ r=await api(P()+'/track/album-detail/list?albumGUID='+encodeURIComponent(guid)+'&page=1&size=300'); list=dataList(r.data); renderTracks(list); }
+  else if(type==='artist'){ r=await api(P()+'/track/artist-detail/list?artistGUID='+encodeURIComponent(guid)+'&page=1&size=300'); list=dataList(r.data); renderTracks(list); }
+  else if(type==='playlist'){ r=await api(P()+'/track/playlist-detail/list?playlistGUID='+encodeURIComponent(guid)+'&page=1&size=300'); list=dataList(r.data); renderTracks(list); }
   else { box.innerHTML='<div class="empty">不支持</div>'; }
 }
 function esc(s){ return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -2523,7 +3021,7 @@ async function doSearch(q){
   const timer=setTimeout(()=>{ try{ searchCtrl.abort(); }catch(e){} }, 15000); // 15s 兜底超时
   box.innerHTML='<div class="loading">搜索「'+esc(q)+'」…</div>';
   try{
-    const r=await api('/api/p/search/track?q='+encodeURIComponent(q)+'&page=1&size=100',{signal:searchCtrl.signal});
+    const r=await api(P()+'/search/track?q='+encodeURIComponent(q)+'&page=1&size=100',{signal:searchCtrl.signal});
     if(seq!==searchSeq) return; // 已有更新的搜索，丢弃过期结果
     const list=dataList(r.data);
     if(!list.length){ box.innerHTML='<div class="empty">没有找到「'+esc(q)+'」相关歌曲</div>'; return; }
@@ -2539,6 +3037,7 @@ let queue=[], qIndex=-1, currentTrack=null, analyser=null, audioCtx=null, source
 /* —— 进度记忆：定时上报到服务端持久化 —— */
 let _lastSave=0;
 function saveProgressNow(){
+  if(SRC==='docker') return;      // 进度记忆是飞牛那套，本地曲库不上报（guid 不通用）
   if(!currentTrack || !currentTrack.guid) return;
   const t = audio && audio.currentTime ? audio.currentTime : 0;
   const body = {
@@ -2563,7 +3062,7 @@ async function playTrack(track){
   qIndex = queue.findIndex(t=>(normalizeTrack(t).guid===currentTrack.guid));
   if(qIndex<0){ queue=[track]; qIndex=0; }
   renderNowPlaying();
-  audio.src = '/api/p/track/stream?guid='+encodeURIComponent(currentTrack.guid);
+  audio.src = P()+'/track/stream?guid='+encodeURIComponent(currentTrack.guid);
   try{ await audio.play(); }catch(e){ toast('播放失败：'+e.message); return; }
   setSpin(true);
   $('#btn-play').textContent='⏸';
@@ -3237,7 +3736,7 @@ let lyricLines=[];
 async function loadLyrics(guid){
   lyricLines=[]; $('#lyricInner').innerHTML='<div class="lyric-line no-lyric">加载歌词…</div>';
   try{
-    const r=await api('/api/p/lyric/list?trackGUID='+encodeURIComponent(guid));
+    const r=await api(P()+'/lyric/list?trackGUID='+encodeURIComponent(guid));
     const list=dataList(r.data);
     const lrc = pickLyric(list);
     lyricLines = parseLrc(lrc);
@@ -3473,7 +3972,7 @@ function btSong(){
   return {
     id: t.guid || 'fn',
     // 歌名绝不能为空：空标题有些设备会退回显示"应用名"
-    title: line || t.title || '飞牛音乐',
+    title: line || t.title || '咔一下子音乐',
     artist: t.artist || '',
     // 歌词当歌名时，把真歌名放到专辑位，音箱上"歌名 / 专辑"两行正好是"词 / 曲名"
     album: line ? (t.title || '') : (t.album || ''),
@@ -3641,25 +4140,428 @@ audio.addEventListener('seeked', ()=>{ btPush(true); btStatus(); });
 setInterval(()=>{ if (BT.on && !audio.paused) btPush(); }, 5000);
 
 
-/* 恢复会话 */
-let pendingResume = null; // 待恢复的进度（不自动播放）
-(async function(){
+/* ============ 搜索下载（左搜右播） ============ */
+let dlSongs = [];          // 服务端原始结果
+let dlSel = new Set();     // 选中的曲目 key（source:id）
+let dlNoLive = false;      // 排除 Live / 现场版
+let dlQueueTimer = null;
+
+// 排除 Live 的判定：歌名或专辑里带这些词的都算
+const DL_LIVE_RE = /live|现场|演唱会|concert|unplugged|不插电/i;
+const dlKey = (s) => s.source + ':' + s.id;
+const dlIsLive = (s) => DL_LIVE_RE.test((s.name || '') + ' ' + (s.album || ''));
+function dlVisible(){
+  return dlNoLive ? dlSongs.filter(s => !dlIsLive(s)) : dlSongs;
+}
+
+try{ dlNoLive = localStorage.getItem('fn:dl-nolive') === '1'; }catch(e){}
+
+async function dlAsk(path, opts){
+  const r = await api(path, opts);
+  if(!r || typeof r.json === 'function') throw new Error('接口无响应');
+  if(r.code !== 0) throw new Error(r.msg || '请求失败');
+  return r.data;
+}
+
+async function dlSearch(){
+  const q = ($('#dl-q').value || '').trim();
+  if(!q) return;
+  const box = $('#dl-results');
+  box.innerHTML = '<div class="dl-empty">搜索中…</div>';
+  $('#dl-go').disabled = true;
   try{
-    // 服务端启动时会自动用记住的密码登录；这里轮询最多 ~3 秒等待它完成
-    let r = null;
+    const d = await dlAsk('/api/dl/search?q=' + encodeURIComponent(q) + '&size=100');
+    dlSongs = d.songs || [];
+    dlSel.clear();                 // 换了关键词，之前的勾选作废
+    dlRenderResults();
+  }catch(e){
+    box.innerHTML = '<div class="dl-empty">搜索失败：' + esc(e.message) + '<br><span>如果提示连不上，检查 downloader 容器或 DL_BASE</span></div>';
+    dlSongs = []; $('#dl-all').style.display = 'none'; $('#dl-count').textContent = '';
+  }finally{ $('#dl-go').disabled = false; }
+}
+
+function dlRenderResults(){
+  const list = dlVisible();
+  const box = $('#dl-results');
+  const hidden = dlSongs.length - list.length;
+  $('#dl-count').textContent = dlSongs.length
+    ? ('共 ' + dlSongs.length + ' 首' + (hidden > 0 ? ' · 已滤掉 ' + hidden + ' 首 Live' : ''))
+    : '';
+  $('#dl-all').style.display = list.length ? '' : 'none';
+
+  if(!list.length){
+    box.innerHTML = dlSongs.length
+      ? '<div class="dl-empty">结果都是 Live 版<br><span>点右上角「排除 Live」可以取消过滤</span></div>'
+      : '<div class="dl-empty">没搜到，换个关键词试试</div>';
+    dlUpdateSelUI();
+    return;
+  }
+
+  box.innerHTML = list.map((s,i)=>{
+    const k = dlKey(s);
+    const on = dlSel.has(k);
+    return `<div class="dl-row${on?' sel':''}" data-k="${esc(k)}">
+      <input type="checkbox"${on?' checked':''} data-k="${esc(k)}"/>
+      <div class="m">
+        <div class="t">${esc(s.name)}</div>
+        <div class="s">${esc(s.artist || '未知歌手')}${s.album ? ' · ' + esc(s.album) : ''}${s.duration ? ' · ' + fmt(s.duration*1000) : ''}</div>
+      </div>
+      <div class="dl-src">${esc(s.source)}</div>
+      <button class="dl-get" data-i="${i}">下载</button>
+    </div>`;
+  }).join('');
+
+  // 勾选：点复选框或点整行都行
+  box.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    cb.addEventListener('change', ()=>dlToggleSel(cb.dataset.k, cb.checked));
+    cb.addEventListener('click', e=>e.stopPropagation());
+  });
+  box.querySelectorAll('.dl-row').forEach(row=>{
+    row.addEventListener('click', ()=>{
+      const k = row.dataset.k;
+      dlToggleSel(k, !dlSel.has(k));
+    });
+  });
+  box.querySelectorAll('button[data-i]').forEach(b=>{
+    b.addEventListener('click', e=>{
+      e.stopPropagation();
+      dlDownload([list[Number(b.dataset.i)]], b);
+    });
+  });
+
+  dlUpdateSelUI();
+}
+
+/** 勾选/取消一首，并同步那一行的样式 */
+function dlToggleSel(k, on){
+  if(on) dlSel.add(k); else dlSel.delete(k);
+  // CSS.escape 在老 WebView 里可能没有，兜个底
+  const sel = (window.CSS && CSS.escape) ? CSS.escape(k) : k.replace(/["\\]/g, '\\$&');
+  const row = document.querySelector('#dl-results .dl-row[data-k="' + sel + '"]');
+  if(row){
+    row.classList.toggle('sel', on);
+    const cb = row.querySelector('input[type=checkbox]');
+    if(cb) cb.checked = on;
+  }
+  dlUpdateSelUI();
+}
+
+/** 全选框、计数、按钮文案一起同步 */
+function dlUpdateSelUI(){
+  const list = dlVisible();
+  const selCount = list.filter(s=>dlSel.has(dlKey(s))).length;
+  const box = $('#dl-allbox');
+  if(box){
+    box.checked = list.length > 0 && selCount === list.length;
+    box.indeterminate = selCount > 0 && selCount < list.length;
+  }
+  const btn = $('#dl-dl-sel');
+  if(btn){
+    btn.style.display = selCount ? '' : 'none';
+    btn.textContent = '下载选中 ' + selCount;
+  }
+  const noLive = $('#dl-nolive');
+  if(noLive) noLive.classList.toggle('on', dlNoLive);
+}
+
+async function dlDownload(list, btn){
+  if(!list || !list.length) return;
+  if(btn){ btn.disabled = true; btn.textContent = '加入中…'; }
+  try{
+    const d = await dlAsk('/api/dl/download', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ songs:list }),
+    });
+    toast('已加入下载队列 ' + (d.added || list.length) + ' 首');
+    dlRefreshQueue();
+  }catch(e){
+    toast('加入失败：' + e.message);
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = '下载'; }
+  }
+}
+
+const DL_ST = { waiting:'等待', downloading:'下载中', canceled:'已取消' };
+function dlStCls(s){
+  if(s==='waiting'||s==='downloading'||s==='canceled') return s==='canceled'?'other':s;
+  if(/done|success|complete/i.test(s||'')) return 'done';
+  if(/fail|error/i.test(s||'')) return 'failed';
+  return 'other';
+}
+function dlStTxt(s){
+  if(DL_ST[s]) return DL_ST[s];
+  if(/done|success|complete/i.test(s||'')) return '完成';
+  if(/fail|error/i.test(s||'')) return '失败';
+  return s || '—';
+}
+
+async function dlRefreshQueue(){
+  let d;
+  try{ d = await dlAsk('/api/dl/queue'); }
+  catch(e){ return; }
+  const tasks = d.tasks || [];
+  const c = d.counts || {};
+  const total = d.total || 0;
+  const waiting = c.waiting || 0, running = c.downloading || 0, canceled = c.canceled || 0;
+  const done = Math.max(0, total - waiting - running - canceled);
+
+  $('#dl-q-total').textContent = total ? total + ' 首' : '';
+  $('#dl-qsum').style.display = total ? '' : 'none';
+  $('#dl-c-wait').textContent = waiting;
+  $('#dl-c-run').textContent = running;
+  $('#dl-c-done').textContent = done;
+
+  const box = $('#dl-queue');
+  if(!tasks.length){ box.innerHTML = '<div class="dl-empty">队列是空的</div>'; return; }
+  box.innerHTML = tasks.slice(0,30).map(t=>{
+    const cls = dlStCls(t.Status);
+    const sub = t.Error ? esc(t.Error) : (t.Path ? esc(String(t.Path).split('/').pop()) : '');
+    return `<div class="dl-task">
+      <div class="tt"><span class="nm">${esc(t.Name || '未命名')}${t.Artist ? ' · ' + esc(t.Artist) : ''}</span>
+        <span class="dl-st ${cls}">${dlStTxt(t.Status)}</span></div>
+      ${cls==='downloading' ? '<div class="dl-tbar"><i></i></div>'
+        : (sub ? `<div style="font-size:11px;color:var(--txt-faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sub}</div>` : '')}
+    </div>`;
+  }).join('');
+}
+
+/* —— 右侧迷你播放器：只读现有播放状态，控制按钮转交给播放器自己的按钮 —— */
+function dlSyncProgress(){
+  const dur = audio.duration || 0, cur = audio.currentTime || 0;
+  const pct = dur > 0 ? Math.min(100, cur/dur*100) : 0;
+  const fill = $('#dl-bar-fill'); if(fill) fill.style.width = pct.toFixed(1) + '%';
+  const tc = $('#dl-t-cur'); if(tc) tc.textContent = fmt(cur*1000);
+  const td = $('#dl-t-dur'); if(td) td.textContent = fmt(dur*1000);
+  const pb = $('#dl-play');
+  if(pb) pb.textContent = (!audio.paused && !!audio.src) ? '⏸' : '▶';
+}
+
+function dlSyncNow(){
+  const t = currentTrack;
+  const tt = $('#dl-np-title');
+  if(tt) tt.textContent = t ? (t.title || t.name || '未知曲目') : '暂无播放';
+  const ar = t ? ((t.artists && t.artists[0] && t.artists[0].name) || t.artist || '') : '';
+  const aa = $('#dl-np-artist');
+  if(aa) aa.textContent = t ? (ar || '未知歌手') : '在曲库里点一首开始';
+  setCover('dl-cover-img','dl-cover-ph', t ? coverUrl(t.coverId) : '');
+  dlSyncProgress();
+}
+
+(function dlBind(){
+  const view = $('#dl');
+  if(!view) return;
+  $('#dl-go').addEventListener('click', dlSearch);
+  $('#dl-q').addEventListener('keydown', e=>{ if(e.key === 'Enter') dlSearch(); });
+
+  // 全部下载（当前可见的）
+  $('#dl-all').addEventListener('click', e=>dlDownload(dlVisible(), e.currentTarget));
+
+  // 下载选中的
+  $('#dl-dl-sel').addEventListener('click', async e=>{
+    const list = dlVisible().filter(s=>dlSel.has(dlKey(s)));
+    if(!list.length) return;
+    await dlDownload(list, e.currentTarget);
+    dlSel.clear(); dlRenderResults();
+  });
+
+  // 全选 / 全不选
+  $('#dl-allbox').addEventListener('change', e=>{
+    const list = dlVisible();
+    if(e.currentTarget.checked) list.forEach(s=>dlSel.add(dlKey(s)));
+    else dlSel.clear();
+    dlRenderResults();
+  });
+
+  // 排除 Live：记住偏好，下次打开还是这个设置
+  $('#dl-nolive').addEventListener('click', ()=>{
+    dlNoLive = !dlNoLive;
+    try{ localStorage.setItem('fn:dl-nolive', dlNoLive ? '1' : '0'); }catch(e){}
+    // 被过滤掉的歌不该留在选中集里
+    if(dlNoLive) dlSongs.filter(dlIsLive).forEach(s=>dlSel.delete(dlKey(s)));
+    dlRenderResults();
+  });
+  $('#dl-nolive').classList.toggle('on', dlNoLive);
+  // 控制按钮直接借用播放器那套，不重写逻辑
+  $('#dl-play').addEventListener('click', ()=>$('#btn-play').click());
+  $('#dl-prev').addEventListener('click', ()=>$('#btn-prev').click());
+  $('#dl-next').addEventListener('click', ()=>$('#btn-next').click());
+  // 点进度条跳转
+  $('#dl-bar').addEventListener('click', e=>{
+    const r = e.currentTarget.getBoundingClientRect();
+    if(!audio.duration || !r.width) return;
+    audio.currentTime = Math.max(0, Math.min(1, (e.clientX - r.left)/r.width)) * audio.duration;
+  });
+  ['timeupdate','play','pause','loadedmetadata'].forEach(ev=>{
+    audio.addEventListener(ev, ()=>{ if(view.classList.contains('show')) dlSyncProgress(); });
+  });
+  ['loadedmetadata','play'].forEach(ev=>{
+    audio.addEventListener(ev, ()=>{ if(view.classList.contains('show')) dlSyncNow(); });
+  });
+  // 队列轮询：只在下载页可见时跑，别在后台空转
+  dlQueueTimer = setInterval(()=>{
+    if(document.hidden) return;
+    if(view.classList.contains('show')) dlRefreshQueue();
+  }, 2500);
+
+  // 没有下载服务（比如桌面版 exe）就把「下载」标签藏掉，别摆一个永远点不出东西的入口
+  (async ()=>{
+    try{
+      const d = await dlAsk('/api/dl/status');
+      if(!d.online){
+        const tab = document.querySelector('header .tab[data-view="dl"]');
+        if(tab) tab.style.display = 'none';
+        if(view.classList.contains('show')){
+          view.classList.remove('show');
+          const pt = document.querySelector('header .tab[data-view="player"]');
+          if(pt) pt.click();
+        }
+      }
+    }catch(e){}
+  })();
+})();
+
+
+/* ============ 遥控跟随：页面只是播放终端，状态以服务端为准 ============ */
+// 这样 AI / CLI / 手机改一下，这边就跟着变；你在这边点，别的终端也跟着变。
+(function ctlFollow(){
+  let lastSeq = -1;
+  let busy = false;
+
+  async function apply(d){
+    if (busy) return;
+    busy = true;
+    try{
+      const sameTrack = currentTrack && currentTrack.guid === d.guid;
+      if (d.guid && !sameTrack){
+        const t = (allTracks || []).find(x=>x.guid === d.guid) || {
+          guid: d.guid, title: d.title, name: d.title, artist: d.artist,
+          artists: [{ guid: '', name: d.artist || '未知歌手' }],
+          album: { guid: '', name: d.album, coverId: d.coverId },
+          coverId: d.coverId, duration: d.duration, format: d.format,
+        };
+        const i = (allTracks || []).findIndex(x=>x.guid === d.guid);
+        queue = (allTracks && allTracks.length) ? allTracks.slice() : [t];
+        qIndex = i >= 0 ? i : 0;
+        await playTrack(t);
+        if (d.title) toast('遥控：' + d.title);
+      }
+      if (d.guid){
+        if (d.paused && !audio.paused) audio.pause();
+        if (!d.paused && audio.paused) { try { await audio.play(); } catch(e){} }
+        const drift = Math.abs(audio.currentTime * 1000 - d.positionMs);
+        if (drift > 3000) audio.currentTime = (d.positionMs || 0) / 1000;
+        if (typeof d.volume === 'number' && Math.abs(audio.volume - d.volume) > 0.01) audio.volume = d.volume;
+      }
+    }catch(e){}
+    finally{ busy = false; }
+  }
+
+  async function poll(){
+    if (document.hidden) return;
+    if ($('#app') && $('#app').style.display === 'none') return;   // 登录页不跟
+    try{
+      const r = await api('/api/ctl/state');
+      const d = r && r.data;
+      if (!d) return;
+      if (d.seq === lastSeq) return;
+      lastSeq = d.seq;
+      await apply(d);
+    }catch(e){}
+  }
+
+  // 把本地状态报上去：位置、暂停、以及用户主动换的歌
+  async function report(){
+    if (document.hidden || !currentTrack) return;
+    try{
+      await api('/api/ctl/tick', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guid: currentTrack.guid,
+          positionMs: Math.round((audio.currentTime || 0) * 1000),
+          paused: !!audio.paused,
+        }),
+      });
+    }catch(e){}
+  }
+
+  setInterval(poll, 1000);
+  setInterval(report, 3000);
+  setTimeout(poll, 800);
+
+  // 本地操作立刻上报，别等 3 秒
+  ['play','pause','seeked','loadedmetadata'].forEach(ev=>{
+    audio.addEventListener(ev, ()=>setTimeout(report, 120));
+  });
+})();
+
+
+(async function(){
+  let r = null;
+  try{
+    // 服务端启动时会自动用记住的密码登录；这里轮询最多 ~3 秒等待它完成。
+    // 选的是 Docker 源就不用等 —— 本地曲库没有登录这回事。
     for(let i=0;i<6;i++){
       r = await api('/api/session');
-      if(r && r.data && r.data.connected) break;
-      if(!(r && r.data && r.data.hasSaved)) break; // 没记住密码，直接走登录页
+      const d = r && r.data;
+      if(d && d.dockerBase && !dockerBaseAddr){
+        dockerBaseAddr = d.dockerBase;
+        const el = $('#in-docker'); if(el && !el.value) el.value = d.dockerBase;
+      }
+      if(SRC==='docker') break;
+      if(d && d.connected) break;
+      if(!(d && d.hasSaved)) break; // 没记住密码，直接走登录页
       await new Promise(s=>setTimeout(s,500));
     }
-    if(r && r.data && r.data.connected){
-      session = { connected:true, username:r.data.username };
-      pendingResume = r.data.lastTrack || null;
+    const d = (r && r.data) || {};
+
+    // 容器里自带曲库（libEnabled）：用户没手动选过源就默认走 Docker，
+    // 否则打开网页看到的是飞牛登录页，没有飞牛的人会一脸茫然。
+    // 默认源由后端 FN_DEFAULT_SRC 决定，前端不猜。
+    if(!localStorage.getItem('fn:src') && (d.libEnabled || d.defaultSrc==='docker')){
+      SRC='docker'; applySrcUI();
+    }
+
+    // 自带曲库 = 这台机器自己就是服务器，没有「飞牛」这个选项。
+    // 藏掉源开关和退出登录，免得用户切到一个根本不存在的 NAS 账号上去。
+    if(d.libEnabled){
+      document.body.classList.add('server-mode');
+      const sub = document.querySelector('.brand-sub');
+      // 带上版本号：看着不对时先看这里，写的版本和服务端一样 = 页面是新的
+      if(sub) sub.textContent = ' · 服务器' + (d.version ? ' v' + d.version : '（页面是旧版，刷新一下）');
+      if(SRC!=='docker'){
+        SRC='docker';
+        try{ localStorage.setItem('fn:src','docker'); }catch(e){}
+        applySrcUI();
+      }
+    }
+
+    if(SRC==='docker'){
+      if(await probeDocker()){
+        session = { connected:true, username:'本地曲库' };
+        pendingResume = null;
+        enter();
+      } else {
+        // 桌面版还没填地址、或容器没挂音乐目录 —— 停在登录页让用户补
+        const why = $('#login-err').textContent;
+        showLogin(why);
+        /* 1.2.10：地址没了，或者那台服务器下线了（容器重建换了 IP 就是这种情况），
+           别让用户对着一句「本地曲库不可用」自己猜下一步。
+           直接扫一遍网段，把能用的节点铺出来，默认选中 IP 最小的那台。 */
+        scanDocker(false).catch(()=>{});
+      }
+      return;
+    }
+
+    if(d.connected){
+      session = { connected:true, username:d.username };
+      fnosConnected = true;
+      pendingResume = d.lastTrack || null;
       enter();
-    } else if(r && r.data && r.data.savedUser){
+    } else if(d.savedUser){
       // 有记住的账号但没自动登上（密码可能变了）：预填账号，让用户只输密码
-      $('#in-user').value = r.data.savedUser;
+      $('#in-user').value = d.savedUser;
     }
   }catch(e){}
 })();

@@ -1,0 +1,54 @@
+# 咔一下子音乐 · 部署（从镜像仓库直接拉，不本地构建）
+#
+#   docker compose pull
+#   docker compose up -d
+#
+# 起两个容器：
+#   kxyz-music  播放器      :8580
+#   kxyz-dl     下载部件    :28001
+#
+# 与标准模板的差别只有一处：这台机器有两个曲库目录
+#   /music      ← MUSIC_DIR      （主库，只读）
+#   /downloads  ← DOWNLOAD_DIR   （下载目录，只读；下载部件往这里写）
+# 所以用 MUSIC_DIRS 而不是 MUSIC_DIR，多挂一处。
+
+services:
+  web:
+    image: crpi-hafqpuc93yvr4hco.cn-hangzhou.personal.cr.aliyuncs.com/kayixiazi/kayixiazi-music:2.1.1
+    container_name: kxyz-music
+    restart: unless-stopped
+    ports:
+      - "8580:8530"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      TZ: Asia/Shanghai
+      MODE: full
+      MUSIC_DIRS: /music,/downloads
+    volumes:
+      - ./data:/data
+      - ${MUSIC_DIR}:/music:ro
+      - ${DOWNLOAD_DIR}:/downloads:ro
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8530/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  downloader:
+    # 官方镜像在 Docker Hub，国内直连不通（实测 registry-1.docker.io 10 秒超时）。
+    # 这台机器上唯一能秒拉的是飞牛自带的镜像站（226MB / 6.3 秒），所以走它。
+    # 换别的机器时：能用 Docker Hub 就写 guohuiyuan/go-music-dl:latest，
+    # 拉不动就换成 docker.fnnas.com/guohuiyuan/go-music-dl:latest（飞牛用户）
+    image: docker.fnnas.com/guohuiyuan/go-music-dl:latest
+    container_name: kxyz-dl
+    restart: unless-stopped
+    ports:
+      - "28001:8080"
+    volumes:
+      - ./dl-data:/home/appuser/data
+      # 下载目录 = 曲库里的那个目录，下完 30 秒内自动进库
+      - ${DOWNLOAD_DIR}:/home/appuser/data/downloads
+    environment:
+      TZ: Asia/Shanghai

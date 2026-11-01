@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%2338d0ff'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%23070d18'/%3E%3C/svg%3E"/>
+<title>咔一下子音乐 · 下载版</title>
+<style>
+:root{
+  --bg:#070d18; --panel:rgba(18,32,54,.72); --panel-2:rgba(12,22,40,.86);
+  --stroke:rgba(120,190,255,.16); --stroke-2:rgba(120,190,255,.30);
+  --txt:#e8f3ff; --dim:#8fb0d0; --faint:#5c7899;
+  --accent:#38d0ff; --accent-2:#4d8dff; --ok:#37d67a; --warn:#ffc857; --err:#ff6b7a;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:
+    radial-gradient(1100px 600px at 15% -10%,rgba(56,140,255,.20),transparent 60%),
+    radial-gradient(900px 500px at 95% 110%,rgba(53,224,255,.12),transparent 60%),
+    var(--bg);
+  color:var(--txt);
+  font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--accent)}
+header{
+  display:flex;align-items:center;gap:12px;padding:14px 20px;
+  border-bottom:1px solid var(--stroke);background:rgba(8,16,30,.7);
+  backdrop-filter:blur(12px);position:sticky;top:0;z-index:20;
+}
+.brand{display:flex;align-items:center;gap:9px;font-weight:650;letter-spacing:.3px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent)}
+.badge{
+  font-size:11.5px;padding:2px 9px;border-radius:999px;color:var(--accent);
+  border:1px solid rgba(56,208,255,.35);background:rgba(56,208,255,.10);
+}
+.grow{flex:1}
+.state{font-size:12.5px;color:var(--dim);display:flex;align-items:center;gap:6px}
+.state i{width:7px;height:7px;border-radius:50%;background:var(--faint);display:inline-block}
+.state.on i{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.state.off i{background:var(--err)}
+
+main{
+  display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;
+  padding:16px 20px 40px;max-width:1440px;margin:0 auto;align-items:start;
+}
+@media (max-width:900px){ main{grid-template-columns:1fr} }
+
+.searchbar{display:flex;gap:10px;margin-bottom:14px}
+.searchbar input{
+  flex:1;height:44px;padding:0 14px;border-radius:12px;color:var(--txt);
+  background:var(--panel-2);border:1px solid var(--stroke);outline:none;font-size:15px;
+}
+.searchbar input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(56,208,255,.12)}
+.searchbar input::placeholder{color:var(--faint)}
+.btn{
+  height:44px;padding:0 20px;border-radius:12px;border:0;cursor:pointer;font-size:14.5px;font-weight:600;
+  color:#04202f;background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  transition:.15s;white-space:nowrap;
+}
+.btn:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
+.btn.ghost{
+  background:transparent;color:var(--dim);border:1px solid var(--stroke);font-weight:500;
+}
+.btn.ghost:hover{color:var(--txt);border-color:var(--stroke-2)}
+.btn.sm{height:30px;padding:0 12px;font-size:12.5px;border-radius:9px}
+
+.card{background:var(--panel);border:1px solid var(--stroke);border-radius:16px;overflow:hidden}
+.card-h{
+  display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--stroke);
+  font-size:13px;color:var(--dim);
+}
+.card-h b{color:var(--txt);font-weight:600;font-size:13.5px}
+.card-b{padding:6px}
+
+.row{
+  display:grid;grid-template-columns:26px minmax(0,1fr) auto auto;gap:12px;align-items:center;
+  padding:9px 10px;border-radius:11px;
+}
+.row:hover{background:rgba(120,190,255,.07)}
+.row .no{color:var(--faint);font-size:12px;text-align:right}
+.meta{min-width:0}
+.meta .t{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta .s{font-size:12px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.src{font-size:11px;color:var(--dim);border:1px solid var(--stroke);border-radius:6px;padding:1px 6px}
+.dur{font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums}
+
+.empty{padding:46px 16px;text-align:center;color:var(--faint);font-size:13.5px;line-height:2}
+.empty b{color:var(--dim)}
+.hint{padding:10px 16px;font-size:12.5px;color:var(--faint);border-top:1px solid var(--stroke);line-height:1.85}
+.hint.warn{color:var(--warn)}
+
+.task{padding:9px 10px;border-radius:11px;display:grid;gap:6px}
+.task + .task{margin-top:4px}
+.task .tt{display:flex;gap:8px;align-items:baseline;font-size:13px}
+.task .tt span:first-child{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.task .st{font-size:11.5px;padding:1px 7px;border-radius:6px;white-space:nowrap}
+.st.waiting{color:var(--dim);background:rgba(143,176,208,.12)}
+.st.downloading{color:var(--accent);background:rgba(56,208,255,.14)}
+.st.done{color:var(--ok);background:rgba(55,214,122,.14)}
+.st.failed{color:var(--err);background:rgba(255,107,122,.14)}
+.st.other{color:var(--faint);background:rgba(143,176,208,.10)}
+.bar{height:4px;border-radius:3px;background:rgba(120,190,255,.12);overflow:hidden}
+.bar i{display:block;height:100%;width:40%;border-radius:3px;
+  background:linear-gradient(90deg,var(--accent),var(--accent-2));animation:run 1.3s linear infinite}
+@keyframes run{0%{transform:translateX(-105%)}100%{transform:translateX(255%)}}
+.sum{display:flex;gap:14px;font-size:12px;color:var(--dim);padding:8px 12px;border-bottom:1px solid var(--stroke)}
+.sum b{color:var(--txt);font-variant-numeric:tabular-nums}
+
+#toast{
+  position:fixed;left:50%;bottom:34px;transform:translateX(-50%) translateY(20px);
+  background:rgba(12,24,42,.96);border:1px solid var(--stroke-2);color:var(--txt);
+  padding:10px 18px;border-radius:12px;font-size:13.5px;opacity:0;pointer-events:none;
+  transition:.22s;z-index:60;max-width:88vw;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand"><span class="dot"></span>咔一下子音乐<span class="badge">下载版</span></div>
+  <div class="grow"></div>
+  <div class="state" id="state"><i></i><span>检查中…</span></div>
+</header>
+
+<main>
+  <section>
+    <div class="searchbar">
+      <input id="q" placeholder="搜歌名 / 歌手 / 专辑，回车搜索" autocomplete="off" spellcheck="false"/>
+      <button class="btn" id="btn-search">搜索</button>
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <b>搜索结果</b>
+        <span id="res-count"></span>
+        <div class="grow"></div>
+        <button class="btn ghost sm" id="btn-dl-all" style="display:none">全部下载</button>
+      </div>
+      <div class="card-b" id="results">
+        <div class="empty">
+          输入关键词开始搜索<br/>
+          <b>下完的歌会躺进音乐目录，回飞牛音乐刷新媒体库就能听</b>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside>
+    <div class="card">
+      <div class="card-h"><b>下载队列</b><div class="grow"></div><span id="q-total"></span></div>
+      <div class="sum" id="q-sum" style="display:none">
+        <span>等待 <b id="c-wait">0</b></span>
+        <span>进行中 <b id="c-run">0</b></span>
+        <span>完成 <b id="c-done">0</b></span>
+      </div>
+      <div class="card-b" id="queue">
+        <div class="empty" style="padding:34px 12px">队列是空的</div>
+      </div>
+      <div class="hint" id="after-hint">
+        歌下到音乐目录就完事了。飞牛音乐下次扫描就能看到，不用做任何设置；
+        想让它马上出现，在飞牛音乐里点一次「扫描 / 刷新媒体库」。
+      </div>
+    </div>
+  </aside>
+</main>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+const $ = (s) => document.querySelector(s);
+let songs = [];
+let toastTimer;
+
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function fmtDur(sec) {
+  const n = Number(sec) || 0;
+  if (!n) return '';
+  const m = Math.floor(n / 60);
+  return m + ':' + String(Math.floor(n % 60)).padStart(2, '0');
+}
+async function api(path, opts) {
+  const r = await fetch(path, Object.assign({ headers: { 'Accept': 'application/json' } }, opts || {}));
+  const j = await r.json().catch(() => null);
+  if (!r.ok || (j && j.code !== 0)) throw new Error((j && j.msg) || ('HTTP ' + r.status));
+  return j.data;
+}
+
+/* —— 服务状态 —— */
+async function refreshState() {
+  try {
+    const d = await api('/api/dl/status');
+    const el = $('#state');
+    if (d.online) {
+      el.className = 'state on';
+      el.querySelector('span').textContent = '下载服务在线';
+    } else {
+      el.className = 'state off';
+      el.querySelector('span').textContent = '下载服务未就绪（检查 downloader 容器）';
+    }
+  } catch (e) {
+    const el = $('#state');
+    el.className = 'state off';
+    el.querySelector('span').textContent = '无法连接本机服务';
+  }
+}
+
+/* —— 搜索 —— */
+async function doSearch() {
+  const q = $('#q').value.trim();
+  if (!q) return;
+  const box = $('#results');
+  box.innerHTML = '<div class="empty">搜索中…</div>';
+  $('#btn-search').disabled = true;
+  try {
+    const d = await api('/api/dl/search?q=' + encodeURIComponent(q) + '&size=100');
+    songs = d.songs || [];
+    renderResults();
+  } catch (e) {
+    box.innerHTML = '<div class="empty">搜索失败：' + esc(e.message) + '</div>';
+    songs = [];
+    $('#btn-dl-all').style.display = 'none';
+    $('#res-count').textContent = '';
+  } finally {
+    $('#btn-search').disabled = false;
+  }
+}
+
+function renderResults() {
+  const box = $('#results');
+  $('#res-count').textContent = songs.length ? '共 ' + songs.length + ' 首' : '';
+  $('#btn-dl-all').style.display = songs.length ? '' : 'none';
+  if (!songs.length) {
+    box.innerHTML = '<div class="empty">没搜到，换个关键词或歌手名试试</div>';
+    return;
+  }
+  box.innerHTML = songs.map((s, i) => `
+    <div class="row">
+      <div class="no">${i + 1}</div>
+      <div class="meta">
+        <div class="t">${esc(s.name)}</div>
+        <div class="s">${esc(s.artist || '未知歌手')}${s.album ? ' · ' + esc(s.album) : ''}</div>
+      </div>
+      <div class="src">${esc(s.source)}</div>
+      <button class="btn sm" data-i="${i}">下载</button>
+    </div>`).join('');
+
+  box.querySelectorAll('button[data-i]').forEach((b) => {
+    b.addEventListener('click', () => download([songs[Number(b.dataset.i)]], b));
+  });
+}
+
+async function download(list, btn) {
+  if (!list || !list.length) return;
+  if (btn) { btn.disabled = true; btn.textContent = '加入中…'; }
+  try {
+    const d = await api('/api/dl/download', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ songs: list }),
+    });
+    toast('已加入队列 ' + (d.added || list.length) + ' 首' + (d.existing ? '（' + d.existing + ' 首已存在）' : ''));
+    refreshQueue();
+  } catch (e) {
+    toast('加入失败：' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '下载'; }
+  }
+}
+
+/* —— 队列 —— */
+const STATUS_TEXT = { waiting: '等待', downloading: '下载中', canceled: '已取消' };
+function statusClass(s) {
+  if (s === 'waiting') return 'waiting';
+  if (s === 'downloading') return 'downloading';
+  if (s === 'canceled') return 'other';
+  if (/done|success|complete/i.test(s || '')) return 'done';
+  if (/fail|error/i.test(s || '')) return 'failed';
+  return 'other';
+}
+function statusText(s) {
+  if (STATUS_TEXT[s]) return STATUS_TEXT[s];
+  if (/done|success|complete/i.test(s || '')) return '完成';
+  if (/fail|error/i.test(s || '')) return '失败';
+  return s || '—';
+}
+
+let lastDoneKey = '';
+async function refreshQueue() {
+  let d;
+  try { d = await api('/api/dl/queue'); }
+  catch (e) { return; }
+
+  const tasks = d.tasks || [];
+  const counts = d.counts || {};
+  const waiting = counts.waiting || 0;
+  const running = counts.downloading || 0;
+  const canceled = counts.canceled || 0;
+  const total = d.total || 0;
+  const done = Math.max(0, total - waiting - running - canceled);
+
+  $('#q-total').textContent = total ? total + ' 首' : '';
+  $('#q-sum').style.display = total ? '' : 'none';
+  $('#c-wait').textContent = waiting;
+  $('#c-run').textContent = running;
+  $('#c-done').textContent = done;
+
+  const box = $('#queue');
+  if (!tasks.length) {
+    box.innerHTML = '<div class="empty" style="padding:34px 12px">队列是空的</div>';
+    return;
+  }
+  box.innerHTML = tasks.slice(0, 20).map((t) => {
+    const cls = statusClass(t.Status);
+    const showBar = cls === 'downloading';
+    const sub = t.Error ? esc(t.Error) : (t.Path ? esc(String(t.Path).split('/').pop()) : '');
+    return `<div class="task">
+      <div class="tt">
+        <span>${esc(t.Name || '未命名')}${t.Artist ? ' <span style="color:var(--faint)">· ' + esc(t.Artist) + '</span>' : ''}</span>
+        <span class="st ${cls}">${statusText(t.Status)}</span>
+      </div>
+      ${showBar ? '<div class="bar"><i></i></div>' : (sub ? `<div style="font-size:11.5px;color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sub}</div>` : '')}
+    </div>`;
+  }).join('');
+
+  // 刚刚全部下完 → 提示一次
+  const key = total + ':' + waiting + ':' + running;
+  if (total > 0 && waiting === 0 && running === 0 && key !== lastDoneKey) {
+    lastDoneKey = key;
+    toast('下载完成，共 ' + total + ' 首，已存进音乐目录');
+  }
+}
+
+/* —— 事件 —— */
+$('#btn-search').addEventListener('click', doSearch);
+$('#q').addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
+$('#btn-dl-all').addEventListener('click', (e) => download(songs, e.target));
+
+refreshState();
+refreshQueue();
+setInterval(refreshQueue, 2000);
+setInterval(refreshState, 15000);
+</script>
+</body>
+</html>

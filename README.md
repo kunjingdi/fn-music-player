@@ -1,6 +1,10 @@
-# 飞牛音乐播放器
+# 咔一下子音乐
 
-飞牛 NAS 音乐服务的第三方 Windows / macOS 桌面播放器，基于 Electron。
+桌面音乐播放器（Windows / macOS），基于 Electron。
+
+**两种数据源，开箱选一个就行：**
+- **飞牛 NAS** —— 连你自己的飞牛音乐服务，曲库读 NAS 里已有的音乐
+- **Docker** —— 连自建曲库容器，**不装飞牛也能用**，同网段自动搜索，不用填账号密码
 
 界面按"提词器"的思路重做过：左边一屏歌词，右边三块实时波形，皮肤可整套切换。
 
@@ -43,27 +47,36 @@
 
 ## 下载
 
-到 **[Releases](../../releases)** 下载最新版本：
+到 **[Releases](../../releases)** 下载最新版（v2.1.2）：
 
-| 平台 | 文件 | 说明 |
+| 要什么 | 文件 | 说明 |
 |---|---|---|
-| Windows 10/11 x64 | `飞牛音乐播放器-x.x.x-安装程序.exe` | 双击安装 |
-| macOS（M 芯片 / Intel 通用） | `FnMusicPlayer-x.x.x-universal.dmg` | 拖进「应用程序」 |
+| **服务端**（推荐） | `kxyz-docker-2.1.1.zip` | 跑在 NAS 上的 Docker 服务，一条命令部署 |
+| Windows 客户端 | `KaYiXiaZi-Music-2.1.2-Setup.exe` | 双击安装，**不含接口密钥** |
+| 电视客户端 | `KaYiXiaZi-Music-TV-1.3.5.apk` | Android TV / 电视盒子，arm64 |
+
+**服务端起法**：解压 → 把 `env.example` 改名为 `.env` 并填 `MUSIC_DIR` → `docker compose pull` → `docker compose up -d` → 浏览器开 `http://NAS的IP:8580`。详见 [docker/README.md](docker/README.md)。
+
+**客户端不含接口密钥**：
+
+- 连自建 **Docker 服务端** → 装完直接搜局域网，不用配任何东西
+- 连**飞牛 NAS** → 需要自己把 `config.local.json` 放到安装目录（和 exe 同级）
+
+> macOS 版暂未提供（v1.5.1 的 dmg 已随旧版一起下架）。
 
 **关于安全提示**
 
 两个包都**没有购买商业代码签名证书**，系统会拦一下，这是正常的：
 
 - **Windows**：SmartScreen 提示"Windows 已保护你的电脑" → 点「更多信息」→「仍要运行」
-- **macOS**：右键点图标 →「打开」；若提示"已损坏"，在终端执行
-  `xattr -dr com.apple.quarantine "/Applications/飞牛音乐播放器.app"`
+- **电视**：提示"未知来源" → 允许安装
 
 ---
 
 ## 使用
 
-1. 安装并打开
-2. 填你的飞牛地址：局域网填 `192.168.1.100:5666`，域名填 `https://music.example.com`（带协议）
+1. 安装并打开，登录页顶部先选数据源：**飞牛 NAS** 或 **Docker**
+2. 选飞牛：填你的飞牛地址：局域网填 `192.168.1.100:5666`，域名填 `https://music.example.com`（带协议）
 3. 填飞牛系统账号密码，点「连接并登录」
 
 macOS 上系统自带「正在播放」，蓝牙音箱会自动显示歌名，不需要额外开关。

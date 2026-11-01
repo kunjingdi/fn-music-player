@@ -45,3 +45,39 @@ config.local.json
 
 # 重渲染的临时截图（只保留 docs/ 里选中的几张）
 shots_clean/
+
+# 本地曲库（Docker 源）运行数据——索引和封面都能重建，不进仓库
+library.json
+covers/
+data/
+dl-data/
+
+# 测试样本（几十 MB 音频，别提交）
+test-music/
+
+# 端到端测试的临时产物
+_shots/
+_tmpdata*/
+
+# FPK 打包产物与下载的运行时（都能由 fpk/build.sh 重新生成）
+fpk/out/
+fpk/build/
+fpk/_dl/
+fpk/_deps/
+fpk/_tools/
+
+# 历史归档区（1.3G 的历史 exe / 废弃的 FPK 方案），不进仓库
+archive/
+
+# 已废弃的 FPK 打包目录
+fpk-docker/
+
+# 本机调试脚本（含内网地址、临时验证代码，不进仓库）
+tools/
+
+# 内部文档底稿（写视频稿用的，不进仓库）
+docs/说明书.md
+docs/技术报告_*.txt
+
+# release 说明草稿
+_release_notes_*.md

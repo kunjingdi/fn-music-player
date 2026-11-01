@@ -1,12 +1,15 @@
 {
   "name": "fn-music-player",
-  "version": "1.5.1",
-  "description": "飞牛音乐 · 桌面播放器（独立 exe）",
+  "version": "2.1.2",
+  "description": "咔一下子音乐 · 桌面播放器（独立 exe，兼容飞牛音乐）",
   "main": "electron-main.js",
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --win --x64",
-    "dist:mac": "electron-builder --mac --arm64 --x64"
+    "dist:mac": "electron-builder --mac --arm64 --x64",
+    "serve:lib": "node server.cjs",
+    "docker:build": "docker build -f docker/Dockerfile -t fn-music-web:2.0.0 .",
+    "docker:save": "docker save fn-music-web:2.0.0 | gzip > fn-music-web-2.0.0.tar.gz"
   },
   "author": "junze",
   "license": "MIT",
@@ -16,14 +19,17 @@
   },
   "build": {
     "appId": "com.junze.fnmusic",
-    "productName": "飞牛音乐播放器",
+    "productName": "咔一下子音乐",
     "asar": true,
     "files": [
       "electron-main.js",
       "preload.js",
       "server.cjs",
+      "library.cjs",
       "bt-smtc.cjs",
-      "index.html"
+      "index.html",
+      "icon_512.png",
+      "config.local.example.json"
     ],
     "win": {
       "target": [
@@ -42,8 +48,8 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "飞牛音乐播放器",
-      "artifactName": "飞牛音乐播放器-${version}-安装程序.exe"
+      "shortcutName": "咔一下子音乐",
+      "artifactName": "咔一下子音乐-${version}-安装程序.exe"
     },
     "mac": {
       "target": [
@@ -55,15 +61,25 @@
       "hardenedRuntime": false,
       "gatekeeperAssess": false,
       "darkModeSupport": true,
-      "artifactName": "FnMusicPlayer-${version}-${arch}.dmg"
+      "artifactName": "KaYiXiaZiMusic-${version}-${arch}.dmg"
     },
     "dmg": {
       "title": "FnMusicPlayer ${version}",
       "contents": [
-        { "x": 150, "y": 200 },
-        { "x": 400, "y": 200, "type": "link", "path": "/Applications" }
+        {
+          "x": 150,
+          "y": 200
+        },
+        {
+          "x": 400,
+          "y": 200,
+          "type": "link",
+          "path": "/Applications"
+        }
       ]
     }
   },
-  "dependencies": {}
+  "dependencies": {
+    "music-metadata": "^12.3.3"
+  }
 }
