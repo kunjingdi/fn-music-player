@@ -47,13 +47,13 @@
 
 ## 下载
 
-到 **[Releases](../../releases)** 下载最新版（v2.1.2）：
+到 **[Releases](../../releases)** 下载最新版（v2.1.4）：
 
 | 要什么 | 文件 | 说明 |
 |---|---|---|
-| **服务端**（推荐） | `kxyz-docker-2.1.1.zip` | 跑在 NAS 上的 Docker 服务，一条命令部署 |
-| Windows 客户端 | `KaYiXiaZi-Music-2.1.2-Setup.exe` | 双击安装，**不含接口密钥** |
-| 电视客户端 | `KaYiXiaZi-Music-TV-1.3.5.apk` | Android TV / 电视盒子，arm64 |
+| **服务端**（推荐） | `docker/` 里的 compose | 跑在 NAS 上的 Docker 服务（镜像 `2.1.4`），一条命令部署 |
+| Windows 客户端 | `KaYiXiaZi-Music-2.1.4-Setup.exe` | 双击安装，**含签名常量，装完能直接登** |
+| 电视客户端 | `KaYiXiaZi-Music-TV-1.3.6.apk` | Android TV / 电视盒子（1.3.7 带拼音搜索，实测后上） |
 
 **服务端起法**：解压 → 把 `env.example` 改名为 `.env` 并填 `MUSIC_DIR` → `docker compose pull` → `docker compose up -d` → 浏览器开 `http://NAS的IP:8580`。详见 [docker/README.md](docker/README.md)。
 
