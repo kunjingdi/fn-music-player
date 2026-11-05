@@ -25,7 +25,7 @@
 services:
   # ══════════ 播放器 ══════════
   web:
-    image: crpi-hafqpuc93yvr4hco.cn-hangzhou.personal.cr.aliyuncs.com/kayixiazi/kayixiazi-music:2.1.1
+    image: crpi-hafqpuc93yvr4hco.cn-hangzhou.personal.cr.aliyuncs.com/kayixiazi/kayixiazi-music:2.1.4
     container_name: kxyz-music
     restart: unless-stopped
     ports:
