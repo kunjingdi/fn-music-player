@@ -25,6 +25,8 @@ services:
       TZ: Asia/Shanghai
       MODE: full
       MUSIC_DIRS: /music,/downloads
+      FN_AUTHX_PREFIX: "NDzZTVxnRKP8Z0jXg1VAMonaG8akvh"
+      FN_CLIENT_KEY: "6D5602D4-A342-4799-A0F0-BB795E7167D0"
     volumes:
       - ./data:/data
       - ${MUSIC_DIR}:/music:ro

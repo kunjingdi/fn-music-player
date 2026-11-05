@@ -81,3 +81,6 @@ docs/技术报告_*.txt
 
 # release 说明草稿
 _release_notes_*.md
+
+# 自测脚本（本机跑，不进仓库）
+_自测_*/

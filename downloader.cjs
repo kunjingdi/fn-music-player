@@ -25,12 +25,22 @@
 const DL_PREFIX = '/music';
 const EXPLICIT_BASE = (process.env.DL_BASE || '').trim().replace(/\/+$/, '');
 
+/** 额外候选主机：连上 NAS 之后由 server.cjs 注入（桌面版下载器跑在 NAS 上，不在本机） */
+let _extraHosts = [];
+function setExtraHosts(list) {
+  const next = Array.from(new Set((list || []).filter(Boolean)));
+  if (next.join(',') !== _extraHosts.join(',')) _cache = { at: 0, base: '' };  // 换了主机就重探
+  _extraHosts = next;
+}
+
 /** 候选地址：显式配置优先，否则在常见位置找 */
 function candidateBases() {
   if (EXPLICIT_BASE) return [EXPLICIT_BASE];
   const ports = String(process.env.DL_PORTS || '28001,28011,8080')
     .split(',').map((s) => s.trim()).filter(Boolean);
-  const hosts = ['host.docker.internal', '127.0.0.1', 'localhost'];
+  // 桌面版：下载器（go-music-dl）是装在 NAS 上的，本机 127.0.0.1 永远探测不到，
+  // 所以把"当前连着的这台 NAS"也加进候选，否则 Windows 端在线搜歌永远报"找不到下载器"
+  const hosts = ['host.docker.internal', '127.0.0.1', 'localhost', ..._extraHosts];
   const out = [];
   for (const h of hosts) for (const p of ports) out.push('http://' + h + ':' + p);
   return out;
@@ -311,6 +321,7 @@ module.exports = {
   records,
   ping,
   base,
+  setExtraHosts,
   // 供测试
   _parseSongsFromHtml: parseSongsFromHtml,
   _parseSummary: parseSummary,

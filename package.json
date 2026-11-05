@@ -1,6 +1,6 @@
 {
   "name": "fn-music-player",
-  "version": "2.1.2",
+  "version": "2.1.4",
   "description": "咔一下子音乐 · 桌面播放器（独立 exe，兼容飞牛音乐）",
   "main": "electron-main.js",
   "scripts": {
@@ -26,10 +26,13 @@
       "preload.js",
       "server.cjs",
       "library.cjs",
+      "downloader.cjs",
       "bt-smtc.cjs",
       "index.html",
+      "icon.ico",
       "icon_512.png",
-      "config.local.example.json"
+      "config.local.example.json",
+      "config.local.json"
     ],
     "win": {
       "target": [

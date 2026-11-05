@@ -37,6 +37,9 @@ services:
       TZ: Asia/Shanghai
       MODE: full
       MUSIC_DIRS: /music
+      # ↓ 飞牛音乐的接口签名常量，没有它连不上飞牛（即报"缺少签名常量"）
+      FN_AUTHX_PREFIX: "NDzZTVxnRKP8Z0jXg1VAMonaG8akvh"
+      FN_CLIENT_KEY: "6D5602D4-A342-4799-A0F0-BB795E7167D0"
       # DL_BASE 故意不写：同机装了下载部件会自动发现（60 秒内）
     volumes:
       - ./data:/data                # 曲库索引、封面缓存，删了只是重建

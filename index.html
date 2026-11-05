@@ -5,6 +5,8 @@
 <!-- 触屏设备上双击 / 双指会把页面放大，整块 UI 就被顶到屏幕外去了，这里锁死缩放 -->
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover"/>
 <title>咔一下子音乐 · 桌面播放器</title>
+<link rel="icon" href="/favicon.ico" sizes="any"/>
+<link rel="apple-touch-icon" href="/icon_512.png"/>
 <style>
 :root{
   --bg-0:#081120; --bg-1:#0b2038; --bg-2:#0e3052;
@@ -2282,6 +2284,135 @@ body.skin-lumen[data-lmtri] .lm-dot.on{box-shadow:0 0 0 2px #ffd21a, 0 0 14px rg
 .scan-tip{font-size:11.5px; color:var(--txt-dim); margin-top:6px; line-height:1.6}
 .scan-tip.err{color:var(--danger)}
 .scan-tip.ok{color:var(--accent)}
+
+/* ══ skin-winamp —— Winamp 2.x 经典：灰面板 + 绿色 LCD + 硬 bevel ══ */
+body.skin-winamp{
+  --bg-0:#232323; --bg-1:#2e2e2e; --bg-2:#1b1b1b;
+  --glass:rgba(255,255,255,.04); --glass-strong:rgba(255,255,255,.08);
+  --stroke:#4c4c4c; --stroke-strong:#6d6d6d;
+  --txt:#dcdcdc; --txt-dim:#9d9d9d; --txt-faint:#6e6e6e;
+  --accent:#00e04a; --accent-2:#7bff9e; --accent-3:#ffc53d;
+  --glow:rgba(0,224,74,.18); --glow-soft:rgba(0,224,74,.26);
+  --bg-glow-1:rgba(0,224,74,.05); --bg-glow-2:rgba(255,197,61,.03);
+  --viz-bg-top:#0a0f0a; --viz-bg-bottom:#050805;
+  --input-bg:#1b1b1b;
+  --danger:#ff5c5c;
+  background-color:#232323;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.014) 0 1px, transparent 1px 2px),
+    linear-gradient(180deg,#2f2f2f 0%,#232323 42%,#1a1a1a 100%);
+  font-family:Consolas,'Courier New','Microsoft YaHei','PingFang SC',monospace;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:.2px;
+}
+body.skin-winamp::before{display:none}
+
+/* Winamp 皮肤当初漏了歌词配色，于是吃默认的 --txt-faint(#6e6e6e)，
+   在 #2c2c2c 的面板上几乎看不清（实测截图整块歌词区糊成灰片）。
+   补一套终端绿：非当前行暗绿，当前行亮绿 + 微光。 */
+body.skin-winamp .lyric-line{color:#6f9f7c; font-weight:400}
+body.skin-winamp .lyric-line.active{
+  color:#00e04a; font-weight:700;
+  text-shadow:0 0 18px rgba(0,224,74,.55);
+}
+body.skin-winamp .lyric-line.no-lyric{color:#557a62}
+
+body.skin-winamp .login-card,
+body.skin-winamp .player-box,
+body.skin-winamp .side,
+body.skin-winamp .panel,
+body.skin-winamp .card,
+body.skin-winamp .list-wrap{
+  border-radius:0 !important;
+  background:linear-gradient(180deg,#3a3a3a,#2c2c2c) !important;
+  border:1px solid #0d0d0d !important;
+  box-shadow:inset 1px 1px 0 #5e5e5e, inset -1px -1px 0 #141414, 0 2px 0 rgba(0,0,0,.5) !important;
+  backdrop-filter:none !important;
+}
+
+body.skin-winamp input,
+body.skin-winamp .field input,
+body.skin-winamp select{
+  border-radius:0 !important;
+  background:#0b0f0b !important;
+  border:1px solid #0a0a0a !important;
+  box-shadow:inset 1px 1px 0 #0a0a0a, inset -1px -1px 0 #4a4a4a !important;
+  color:#00e04a !important;
+  font-family:Consolas,'Courier New',monospace !important;
+  letter-spacing:.6px;
+}
+body.skin-winamp input::placeholder{color:#3f6b4a !important}
+
+body.skin-winamp .ctrl,
+body.skin-winamp .btn-login,
+body.skin-winamp button.btn,
+body.skin-winamp .btn-scan{
+  border-radius:0 !important;
+  background:linear-gradient(180deg,#4b4b4b,#303030) !important;
+  border:1px solid #0c0c0c !important;
+  box-shadow:inset 1px 1px 0 #6d6d6d, inset -1px -1px 0 #161616 !important;
+  color:#d8d8d8 !important;
+}
+body.skin-winamp .ctrl:hover{background:linear-gradient(180deg,#565656,#3a3a3a) !important; color:#fff !important}
+body.skin-winamp .ctrl:active{box-shadow:inset 1px 1px 0 #161616, inset -1px -1px 0 #5e5e5e !important}
+body.skin-winamp .ctrl.play{
+  background:linear-gradient(180deg,#2b6b3f,#1c4a2b) !important;
+  color:#9dffb8 !important;
+  box-shadow:inset 1px 1px 0 #4f9d68, inset -1px -1px 0 #0a1f12 !important;
+}
+body.skin-winamp .ctrl.karaoke-on,
+body.skin-winamp .ctrl.eq-on,
+body.skin-winamp .ctrl.mode-on{
+  background:linear-gradient(180deg,#2c5a3a,#17301f) !important;
+  color:#00ff62 !important; border-color:#0a1f12 !important;
+  box-shadow:inset 1px 1px 0 #3f8f57, inset -1px -1px 0 #06110a !important;
+}
+
+body.skin-winamp .bar,
+body.skin-winamp .vol-bar{
+  border-radius:0 !important; height:10px !important;
+  background:#0b0b0b !important;
+  border:1px solid #0a0a0a !important;
+  box-shadow:inset 1px 1px 0 #000, inset -1px -1px 0 #3a3a3a !important;
+}
+body.skin-winamp .bar .fill,
+body.skin-winamp .vol-bar .fill{
+  border-radius:0 !important;
+  background:linear-gradient(180deg,#5dff8a,#00c93f 55%,#009a2e) !important;
+  box-shadow:0 0 6px rgba(0,224,74,.55) !important;
+}
+body.skin-winamp .bar .knob,
+body.skin-winamp .vol-bar .knob{
+  border-radius:0 !important; width:8px !important; height:16px !important;
+  background:linear-gradient(180deg,#8a8a8a,#4a4a4a) !important;
+  border:1px solid #0a0a0a !important;
+  box-shadow:inset 1px 1px 0 #b0b0b0 !important;
+}
+
+body.skin-winamp #np-title,
+body.skin-winamp #t-cur,
+body.skin-winamp #t-dur,
+body.skin-winamp .logo h1{
+  color:#00e04a !important;
+  text-shadow:0 0 8px rgba(0,224,74,.45) !important;
+  font-family:Consolas,'Courier New',monospace !important;
+  letter-spacing:1px !important;
+}
+body.skin-winamp #np-artist{color:#9d9d9d !important}
+body.skin-winamp .logo h1 small{color:#7bff9e !important}
+
+body.skin-winamp .row,
+body.skin-winamp .track-row{border-radius:0 !important; border-bottom:1px solid #262626 !important}
+body.skin-winamp .row:hover,
+body.skin-winamp .track-row:hover{background:#2b2b2b !important}
+body.skin-winamp .row.on,
+body.skin-winamp .track-row.on{
+  background:#12301c !important; color:#9dffb8 !important;
+  box-shadow:inset 2px 0 0 #00e04a !important;
+}
+body.skin-winamp .card{border-radius:0 !important}
+body.skin-winamp .card:hover{border-color:#00e04a !important}
+body.skin-winamp canvas{background:#050805 !important}
 </style>
 </head>
 <body>
@@ -2298,7 +2429,7 @@ body.skin-lumen[data-lmtri] .lm-dot.on{box-shadow:0 0 0 2px #ffd21a, 0 0 14px rg
       </div>
     </div>
     <div class="field fn-field"><label>飞牛 NAS 地址</label>
-      <input id="in-base" placeholder="如 192.168.1.10:5666 或 https://music.example.com" spellcheck="false"/>
+      <input id="in-base" placeholder="如 192.168.1.10:5666 或 https://kknxs008.fnos.net" spellcheck="false"/>
     </div>
     <div class="field fn-field"><label>飞牛音乐账号</label>
       <input id="in-user" placeholder="你的飞牛系统账号" autocomplete="off" spellcheck="false"/>
@@ -2414,6 +2545,7 @@ body.skin-lumen[data-lmtri] .lm-dot.on{box-shadow:0 0 0 2px #ffd21a, 0 0 14px rg
           </div>
           <div class="controls">
             <button class="ctrl" id="btn-mode" title="播放模式"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.2 3.2 20.6 6.4 17.2 9.6"/><path d="M20.6 6.4H7.8A4.2 4.2 0 0 0 3.6 10.6"/><path d="M6.8 20.8 3.4 17.6 6.8 14.4"/><path d="M3.4 17.6h12.8a4.2 4.2 0 0 0 4.2-4.2"/></svg></button>
+            <button class="ctrl" id="btn-eq" title="均衡器 EQ"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 4v6M5 14v6"/><circle cx="5" cy="12" r="2.1"/><path d="M12 4v10M12 18v2"/><circle cx="12" cy="16" r="2.1"/><path d="M19 4v2M19 10v10"/><circle cx="19" cy="8" r="2.1"/></svg></button>
             <button class="ctrl" id="btn-prev" title="上一曲">⏮</button>
             <button class="ctrl play" id="btn-play" title="播放/暂停">▶</button>
             <button class="ctrl" id="btn-next" title="下一曲">⏭</button>
@@ -2537,7 +2669,7 @@ let SRC = 'fnos';
 try{ const s=localStorage.getItem('fn:src'); if(s==='docker'||s==='fnos') SRC=s; }catch(e){}
 const P = () => SRC==='docker' ? '/api/d' : '/api/p';
 /* 一次拉多少首：飞牛源维持原来的 300；本地曲库自己扫的，一次拉全（804 首也只 300KB） */
-const LIST_SIZE = () => SRC==='docker' ? 5000 : 300;
+const LIST_SIZE = () => 2000;   // 飞牛接口对 size 有上限：2000 能拿全，3000 会被打回 50 条
 let fnosConnected = false;        // 飞牛会话是否已登录（切源时不能混用）
 let dockerBaseAddr = '';          // 桌面版填过的远程曲库地址（仅用于回填输入框）
 // 待恢复的播放进度（不自动播放）。飞牛源用它续播，本地曲库一律置空。
@@ -2923,15 +3055,44 @@ document.querySelectorAll('#library .tab').forEach(t=>t.addEventListener('click'
   t.classList.add('active'); libMode=t.dataset.lib; loadLibrary();
 }));
 
+/* —— 分页把曲库拉全 ——
+   飞牛接口对 size 有硬上限：超过 2000 它不报错，直接把 size 丢掉、按默认 50 条返回。
+   所以 size 一旦填大，反而只能拿到 50 首（看着像「曲库就这么点」）。
+   办法是按页拉：每页 1000，一直拉到够 total 为止。一万首就是 10 页。 */
+const PAGE_SIZE = 1000;
+const MAX_PAGES = 100;          // 兜底 10 万首，够任何人用
+
+async function fetchAllTracks(onProgress){
+  let all = [], total = 0;
+  for(let page = 1; page <= MAX_PAGES; page++){
+    const r = await api(P()+'/track/list?page='+page+'&size='+PAGE_SIZE);
+    if(!r || (r.code !== 0 && r.code !== undefined)) throw new Error((r && r.msg) || '接口返回异常');
+    const d = r.data || {};
+    const list = dataList(d);
+    total = Number(d.total || 0) || total;
+    if(!list.length) break;
+    all = all.concat(list);
+    if(onProgress) onProgress(all.length, total);
+    if(total && all.length >= total) break;
+  }
+  return { list: all, total: total || all.length };
+}
+
 async function loadTracks(){
   const box=$('#lib-content');
-  box.innerHTML='<div class="loading">加载中…</div>';
-  const r = await api(P()+'/track/list?page=1&size='+LIST_SIZE());
-  if(r && r.code!==0 && r.code!==undefined){ box.innerHTML='<div class="empty">加载失败：'+(r.msg||'')+'</div>'; return; }
-  const list = dataList(r&&r.data ? r.data : r);
-  allTracks = list;
-  setQueue(list); // 默认：下一曲/上一曲就在全部歌曲里顺序播
-  renderTracks(list);
+  box.innerHTML='<div class="loading">加载曲库…</div>';
+  try{
+    const { list } = await fetchAllTracks(function(n, t){
+      const el = box.querySelector('.loading');
+      if(el) el.textContent = '加载曲库 ' + n + (t ? ' / ' + t : '') + ' 首…';
+    });
+    allTracks = list;
+    buildSearchIndex();
+    setQueue(list); // 默认：下一曲/上一曲就在全部歌曲里顺序播
+    renderTracks(list);
+  }catch(e){
+    box.innerHTML='<div class="empty">加载失败：'+esc(e && e.message ? e.message : '网络错误')+'</div>';
+  }
 }
 function normalizeTrack(t){
   const album = (t.album && typeof t.album==='object') ? t.album : {};
@@ -2950,34 +3111,74 @@ function normalizeTrack(t){
 }
 function coverUrl(id){ return id ? (P()+'/static/cover?coverId='+encodeURIComponent(id)) : ''; }
 
-function renderTracks(list){
-  const box=$('#lib-content');
-  if(!list.length){ box.innerHTML='<div class="empty">曲库是空的，先去飞牛音乐扫描音乐文件夹</div>'; return; }
-  box.innerHTML = list.map((t,i)=>{
-    const n=normalizeTrack(t); const c=coverUrl(n.coverId);
-    return `<div class="row" data-guid="${n.guid}">
+/* 一万首一次性 innerHTML 会卡死（一万个节点 + 一万个监听），
+   所以分块：先画 400 行，点「继续加载」再加 400。监听走委托，只有一个。 */
+const RENDER_STEP = 400;
+let libView = [];      // 当前列表（全部歌曲 / 搜索结果 / 收藏…）
+let libShown = 0;
+
+function trackRowHTML(t, i){
+  const n=normalizeTrack(t); const c=coverUrl(n.coverId);
+  return `<div class="row" data-guid="${n.guid}">
       <div class="idx">${i+1}</div>
       <div class="cov">${c?`<img src="${c}" loading="lazy">`:'♪'}</div>
       <div class="meta"><div class="t">${esc(n.title)}</div><div class="s">${esc(n.artist)}${n.album?' · '+esc(n.album):''}</div></div>
       <div class="dur">${fmt(n.duration)}${n.format?' · '+esc(n.format):''}</div>
     </div>`;
-  }).join('');
-  box.querySelectorAll('.row').forEach(el=>el.addEventListener('click',()=>{
-    const guid=el.dataset.guid;
-    const track=list.find(t=>(normalizeTrack(t).guid===guid));
-    if(track){ setQueue(list); playTrack(track); }
-  }));
+}
+
+let libLabel = '';      // 列表顶部那行说明（「找到 N 首」之类）
+
+function paintRows(){
+  const box=$('#lib-content');
+  const slice = libView.slice(0, libShown);
+  let html = libLabel ? '<div class="lib-sum">' + libLabel + '</div>' : '';
+  html += slice.map(trackRowHTML).join('');
+  const rest = libView.length - libShown;
+  if(rest > 0){
+    html += `<div class="row more-row"><div class="idx">…</div>
+      <div class="cov">＋</div>
+      <div class="meta"><div class="t">还有 ${rest} 首，点这里继续加载</div>
+      <div class="s">也可以直接在右上角搜索框里搜</div></div><div class="dur"></div></div>`;
+  }
+  box.innerHTML = html;
+}
+
+function renderTracks(list, label){
+  const box=$('#lib-content');
+  libView = Array.isArray(list) ? list : [];
+  libLabel = label || '';
+  box.scrollTop = 0;                       // 换了一批结果就回到顶部，别停在上次滚到的位置
+  if(!box._wired){
+    box._wired = true;
+    box.addEventListener('click', function(e){
+      const more = e.target.closest('.more-row');
+      if(more){
+        libShown = Math.min(libShown + RENDER_STEP, libView.length);
+        paintRows();
+        return;
+      }
+      const el = e.target.closest('.row');
+      if(!el || !el.dataset.guid) return;
+      const guid = el.dataset.guid;
+      const track = libView.find(function(t){ return normalizeTrack(t).guid === guid; });
+      if(track){ setQueue(libView); playTrack(track); }
+    });
+  }
+  if(!libView.length){ box.innerHTML='<div class="empty">曲库是空的，先去飞牛音乐扫描音乐文件夹</div>'; return; }
+  libShown = Math.min(RENDER_STEP, libView.length);
+  paintRows();
 }
 
 async function loadLibrary(){
   const box=$('#lib-content'); box.innerHTML='<div class="loading">加载中…</div>';
   let r, list, html='';
   try{
-    if(libMode==='tracks'){ r=await api(P()+'/track/list?page=1&size='+LIST_SIZE()); list=dataList(r.data); allTracks=list; setQueue(list); renderTracks(list); return; }
-    if(libMode==='albums'){ r=await api(P()+'/album/list?page=1&size=100'); list=dataList(r.data); html=gridHTML(list,'album',a=>a.name||a.title,a=>a.artists?.map(x=>x.name).join('/')||a.artist||''); }
+    if(libMode==='tracks'){ await loadTracks(); return; }
+    if(libMode==='albums'){ r=await api(P()+'/album/list?page=1&size=500'); list=dataList(r.data); html=gridHTML(list,'album',a=>a.name||a.title,a=>a.artists?.map(x=>x.name).join('/')||a.artist||''); }
     else if(libMode==='artists'){ r=await api(P()+'/artist/list-all'); list=dataList(r.data); html=gridHTML(list,'artist',a=>a.name||a.title,()=>''); }
     else if(libMode==='playlists'){ r=await api(P()+'/playlist/list'); list=dataList(r.data); html=gridHTML(list,'playlist',p=>p.name||p.title,p=>p.trackCount?p.trackCount+' 首':''); }
-    else if(libMode==='favorites'){ r=await api(P()+'/favorite-track/list?page=1&size=300'); list=dataList(r.data); renderTracks(list); return; }
+    else if(libMode==='favorites'){ r=await api(P()+'/favorite-track/list?page=1&size=1000'); list=dataList(r.data); renderTracks(list); return; }
   }catch(e){ box.innerHTML='<div class="empty">加载失败：'+(e && e.message ? esc(e.message) : '网络错误')+'</div>'; return; }
   if(r && r.code!==0 && r.code!==undefined){ box.innerHTML='<div class="empty">加载失败：'+(r.msg||'')+'</div>'; return; }
   box.innerHTML = html || '<div class="empty">暂无内容</div>';
@@ -2998,9 +3199,9 @@ function gridHTML(list, type, nameFn, subFn){
 async function openDetail(type, guid){
   const box=$('#lib-content'); box.innerHTML='<div class="loading">加载中…</div>';
   let r, list;
-  if(type==='album'){ r=await api(P()+'/track/album-detail/list?albumGUID='+encodeURIComponent(guid)+'&page=1&size=300'); list=dataList(r.data); renderTracks(list); }
-  else if(type==='artist'){ r=await api(P()+'/track/artist-detail/list?artistGUID='+encodeURIComponent(guid)+'&page=1&size=300'); list=dataList(r.data); renderTracks(list); }
-  else if(type==='playlist'){ r=await api(P()+'/track/playlist-detail/list?playlistGUID='+encodeURIComponent(guid)+'&page=1&size=300'); list=dataList(r.data); renderTracks(list); }
+  if(type==='album'){ r=await api(P()+'/track/album-detail/list?albumGUID='+encodeURIComponent(guid)+'&page=1&size=1000'); list=dataList(r.data); renderTracks(list); }
+  else if(type==='artist'){ r=await api(P()+'/track/artist-detail/list?artistGUID='+encodeURIComponent(guid)+'&page=1&size=1000'); list=dataList(r.data); renderTracks(list); }
+  else if(type==='playlist'){ r=await api(P()+'/track/playlist-detail/list?playlistGUID='+encodeURIComponent(guid)+'&page=1&size=1000'); list=dataList(r.data); renderTracks(list); }
   else { box.innerHTML='<div class="empty">不支持</div>'; }
 }
 function esc(s){ return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -3013,21 +3214,72 @@ $('#in-search').addEventListener('input',e=>{
   // 防抖拉长到 500ms，减少输入过程中的请求次数
   searchTimer=setTimeout(()=>{ if(q) doSearch(q); else { searchSeq++; if(searchCtrl){ try{searchCtrl.abort();}catch(e){} } loadTracks(); } },500);
 });
+/* —— 本地曲库搜索 ——
+   以前只打服务器接口：第一次查一个从没查过的词，NAS 要先建索引，实测 8~13 秒，
+   前端 15 秒超时就报「搜索失败或超时」。而曲库其实已经整份在内存里了，
+   本地过一遍 1 万首只要几毫秒。所以：本地先秒出，服务器再补。 */
+let searchIndex = [];     // [{ t: 原始曲目, hay: '歌名 歌手 专辑' 小写 }]
+function buildSearchIndex(){
+  searchIndex = allTracks.map(function(t){
+    const n = normalizeTrack(t);
+    return { t: t, hay: (n.title + ' ' + n.artist + ' ' + (n.album || '')).toLowerCase() };
+  });
+}
+function localSearch(q){
+  const k = String(q || '').toLowerCase().trim();
+  if(!k) return [];
+  const words = k.split(/\s+/).filter(Boolean);
+  const out = [];
+  for(let i = 0; i < searchIndex.length; i++){
+    const hay = searchIndex[i].hay;
+    let hit = true;
+    for(let w = 0; w < words.length; w++){ if(hay.indexOf(words[w]) < 0){ hit = false; break; } }
+    if(hit){ out.push(searchIndex[i].t); if(out.length >= 1000) break; }
+  }
+  return out;
+}
+function mergeTracks(a, b){
+  const seen = new Set(), out = [];
+  a.concat(b).forEach(function(t){
+    const g = normalizeTrack(t).guid;
+    if(!g || seen.has(g)) return;
+    seen.add(g); out.push(t);
+  });
+  return out;
+}
+
 async function doSearch(q){
   const box=$('#lib-content');
   const seq=++searchSeq;
-  if(searchCtrl){ try{ searchCtrl.abort(); }catch(e){} }  // 取消上一次未完成的搜索
+  if(searchCtrl){ try{ searchCtrl.abort(); }catch(e){} }
   searchCtrl=new AbortController();
-  const timer=setTimeout(()=>{ try{ searchCtrl.abort(); }catch(e){} }, 15000); // 15s 兜底超时
-  box.innerHTML='<div class="loading">搜索「'+esc(q)+'」…</div>';
+  const timer=setTimeout(function(){ try{ searchCtrl.abort(); }catch(e){} }, 25000); // NAS 首次建索引要十几秒
+
+  // ① 本地先出结果，不等网络
+  const local = localSearch(q);
+  if(local.length){
+    renderTracks(local, '本机曲库里「' + esc(q) + '」找到 ' + local.length + ' 首');
+  }else{
+    box.innerHTML='<div class="loading">本机曲库里没有，正在问 NAS…（第一次搜某个词会慢，之后就走缓存了）</div>';
+  }
+
+  // ② 再问服务器：可能有本机没扫到的、或服务器那边支持模糊/拼音
   try{
-    const r=await api(P()+'/search/track?q='+encodeURIComponent(q)+'&page=1&size=100',{signal:searchCtrl.signal});
-    if(seq!==searchSeq) return; // 已有更新的搜索，丢弃过期结果
-    const list=dataList(r.data);
-    if(!list.length){ box.innerHTML='<div class="empty">没有找到「'+esc(q)+'」相关歌曲</div>'; return; }
-    renderTracks(list);
+    const r=await api(P()+'/search/track?q='+encodeURIComponent(q)+'&page=1&size=200',{signal:searchCtrl.signal});
+    if(seq!==searchSeq) return;
+    const remote=dataList(r && r.data ? r.data : r);
+    const merged=mergeTracks(local, remote);
+    if(merged.length){
+      renderTracks(merged, '「' + esc(q) + '」找到 ' + merged.length + ' 首'
+        + (local.length ? '（本地 ' + local.length + ' 首' + (merged.length > local.length ? '，服务器又补了 ' + (merged.length - local.length) + ' 首' : '') + '）' : '（本地没有，来自 NAS 搜索）'));
+    }
+    else if(!local.length){ box.innerHTML='<div class="empty">没有找到「'+esc(q)+'」相关歌曲</div>'; }
   }catch(e){
-    if(seq===searchSeq) box.innerHTML='<div class="empty">搜索失败或超时，请稍后重试</div>';
+    if(seq!==searchSeq) return;
+    if(!local.length){
+      box.innerHTML='<div class="empty">本地没有，服务器也没在 25 秒内答复。'
+        + '<br><span style="opacity:.7">换个短一点的词试试；或先确认 NAS 上飞牛音乐的「曲库」里能看到这首歌。</span></div>';
+    }
   }finally{ clearTimeout(timer); }
 }
 
@@ -3275,6 +3527,278 @@ $('#bar').addEventListener('pointerdown',e=>{
 
 /* ============ 可视化区：频谱 / 全曲波形 / 实时波形 ============ */
 let karaokeNodes=null; // { vocalGain } 消原声链路句柄
+/* ============ 均衡器 EQ：11 段推子，接在 merger 之后 ============ */
+setTimeout(function(){ try{ eqBuild(); }catch(e){ console.warn('EQ 面板初始化失败', e); } }, 0);
+const EQ_BANDS = [
+  {f:71,t:'71'},{f:180,t:'180'},{f:320,t:'320'},{f:600,t:'600'},{f:1000,t:'1K'},
+  {f:3000,t:'3K'},{f:6000,t:'6K'},{f:12000,t:'12K'},{f:14000,t:'14K'},
+  {f:16000,t:'16K'},{f:20000,t:'20K'}
+];
+const EQ_PRESETS = {
+  flat:  [0,0,0,0,0,0,0,0,0,0,0],
+  pop:   [2,1,0,1,2,2,1,0,1,2,1],
+  rock:  [4,2,-1,-2,0,2,3,3,4,4,3],
+  vocal: [-2,-1,2,4,4,2,0,-1,-2,-2,-2],
+  bass:  [6,5,3,1,0,-1,-2,-2,-2,-2,-2]
+};
+let eqFilters = null;
+let eqGains = EQ_BANDS.map(function(){ return 0; });
+try{
+  const _g = JSON.parse(localStorage.getItem('fn-eq') || '[]');
+  if(Array.isArray(_g) && _g.length === EQ_BANDS.length) eqGains = _g.map(function(v){ return Number(v) || 0; });
+}catch(e){}
+
+/* 串在 merger → analyser 中间；返回滤波器数组 */
+function buildEQChain(from, to){
+  if(!audioCtx) return null;
+  try{
+    const list = EQ_BANDS.map(function(b, i){
+      const f = audioCtx.createBiquadFilter();
+      f.type = 'peaking';
+      f.frequency.value = Math.min(b.f, ((audioCtx.sampleRate || 48000) / 2) - 200);
+      f.Q.value = 1.1;
+      f.gain.value = eqGains[i] || 0;
+      return f;
+    });
+    let node = from;
+    list.forEach(function(f){ node.connect(f); node = f; });
+    node.connect(to);
+    return list;
+  }catch(e){ from.connect(to); return null; }
+}
+function eqAnyOn(){ return eqGains.some(function(v){ return Math.abs(v) > 0.01; }); }
+function eqMarkActive(){
+  const b = document.getElementById('btn-eq');
+  if(b) b.classList.toggle('eq-on', eqAnyOn());
+}
+function eqSetGain(i, db){
+  eqGains[i] = db;
+  if(eqFilters && eqFilters[i] && audioCtx) eqFilters[i].gain.setTargetAtTime(db, audioCtx.currentTime, 0.03);
+  try{ localStorage.setItem('fn-eq', JSON.stringify(eqGains)); }catch(e){}
+  eqMarkActive();
+}
+function eqApplyAll(list){
+  list.forEach(function(db, i){ eqSetGain(i, db); });
+  eqRender();
+}
+
+/* —— 面板：一条折线，11 个点各对应一个频段，点之间直线相连 ——
+   为什么不做成 11 根竖推子：推子只能表达「这一档多少」，看不出整体曲线形状；
+   折线一眼就能看出是「低频抬起来、高频压下去」，调音的时候靠的是形状不是单点。 */
+const EQ_VB_W = 448, EQ_VB_H = 196;
+const EQ_PAD_L = 34, EQ_PAD_R = 28;
+const EQ_PLOT_TOP = 30, EQ_PLOT_H = 104;      // +12dB → 1..; -12dB → 1..+104
+const EQ_PLOT_W = EQ_VB_W - EQ_PAD_L - EQ_PAD_R;
+
+function eqX(i){ return EQ_PAD_L + i * (EQ_PLOT_W / (EQ_BANDS.length - 1)); }
+function eqY(v){ return EQ_PLOT_TOP + (12 - v) / 24 * EQ_PLOT_H; }
+
+function eqRender(){
+  const svg = document.getElementById('eq-svg');
+  if(!svg) return;
+  const pts = eqGains.map(function(v, i){
+    return eqX(i).toFixed(1) + ',' + eqY(v).toFixed(1);
+  });
+  const curve = document.getElementById('eq-curve');
+  if(curve) curve.setAttribute('points', pts.join(' '));
+  const area = document.getElementById('eq-area');
+  if(area){
+    const z = eqY(0).toFixed(1);
+    area.setAttribute('points',
+      eqX(0).toFixed(1) + ',' + z + ' ' + pts.join(' ') + ' ' +
+      eqX(EQ_BANDS.length - 1).toFixed(1) + ',' + z);
+  }
+  svg.querySelectorAll('.eq-pt').forEach(function(c){
+    c.setAttribute('cy', eqY(eqGains[+c.dataset.i] || 0).toFixed(1));
+  });
+  svg.querySelectorAll('.eq-lbl').forEach(function(t){
+    const i = +t.dataset.i, v = eqGains[i] || 0;
+    t.textContent = (v > 0 ? '+' : '') + (Math.round(v * 10) / 10);
+    t.setAttribute('y', (eqY(v) - 11).toFixed(1));
+    t.setAttribute('opacity', Math.abs(v) > 0.01 ? '1' : '0');
+  });
+  eqMarkActive();
+}
+
+function eqGridSVG(){
+  const out = [];
+  const marks = [12, 6, 0, -6, -12];
+  marks.forEach(function(db){
+    const y = eqY(db).toFixed(1);
+    const zero = db === 0;
+    out.push('<line x1="' + EQ_PAD_L + '" y1="' + y + '" x2="' + (EQ_VB_W - EQ_PAD_R) + '" y2="' + y +
+             '" stroke="' + (zero ? '#3d5b52' : '#242424') + '" stroke-width="' + (zero ? 1.4 : 1) +
+             '"' + (zero ? '' : ' stroke-dasharray="3 4"') + '/>');
+    if(db !== 0){
+      out.push('<text x="' + (EQ_PAD_L - 6) + '" y="' + (Number(y) + 3.2) + '" text-anchor="end" ' +
+               'fill="#4d5560" font-size="8.5">' + (db > 0 ? '+' + db : db) + '</text>');
+    }
+  });
+  eqGains.forEach(function(v, i){
+    const x = eqX(i).toFixed(1);
+    out.push('<line x1="' + x + '" y1="' + EQ_PLOT_TOP + '" x2="' + x + '" y2="' + (EQ_PLOT_TOP + EQ_PLOT_H) +
+             '" stroke="#1f1f1f" stroke-width="1"/>');
+  });
+  return out.join('');
+}
+
+function eqFreqLabelsSVG(){
+  return EQ_BANDS.map(function(b, i){
+    return '<text x="' + eqX(i).toFixed(1) + '" y="' + (EQ_PLOT_TOP + EQ_PLOT_H + 17) +
+           '" text-anchor="middle" fill="#6b7482" font-size="9">' + b.t + '</text>';
+  }).join('');
+}
+
+function eqPointsSVG(){
+  return EQ_BANDS.map(function(b, i){
+    const x = eqX(i).toFixed(1), y = eqY(eqGains[i] || 0).toFixed(1);
+    return '<circle class="eq-hit" data-i="' + i + '" cx="' + x + '" cy="' + y + '" r="15" fill="transparent" style="cursor:ns-resize"/>' +
+           '<circle class="eq-pt" data-i="' + i + '" cx="' + x + '" cy="' + y + '" r="4.4" ' +
+           'fill="#0d1512" stroke="#6ee7b7" stroke-width="2" pointer-events="none"/>' +
+           '<text class="eq-lbl" data-i="' + i + '" x="' + x + '" y="' + (Number(y) - 11) +
+           '" text-anchor="middle" fill="#9fe8c8" font-size="8.5" opacity="0" pointer-events="none"></text>';
+  }).join('');
+}
+
+let eqBuilt = false;
+function eqBuild(){
+  if(eqBuilt) return;
+  eqBuilt = true;
+
+  const css = document.createElement('style');
+  css.textContent = [
+    '#eq-panel{position:fixed;right:22px;bottom:178px;z-index:9998;padding:9px 11px 6px;',
+    'background:#111311;border:1px solid #3a443e;border-radius:10px;color:#cbd5e1;',
+    'font-family:ui-monospace,Consolas,"Courier New",monospace;user-select:none;',
+    'box-shadow:0 20px 60px rgba(0,0,0,.66),inset 0 1px 0 rgba(255,255,255,.05)}',
+    '#eq-panel[hidden]{display:none}',
+    '#eq-panel .eq-head{display:flex;align-items:center;gap:7px;margin-bottom:4px}',
+    '#eq-panel .eq-title{font-size:11px;letter-spacing:1.5px;color:#6ee7b7}',
+    '#eq-panel .eq-presets{display:flex;gap:4px;margin-left:4px}',
+    '#eq-panel button{font:inherit;font-size:10.5px;padding:3px 7px;border-radius:4px;',
+    'background:#1d2420;color:#94a2a0;border:1px solid #3a443e;cursor:pointer}',
+    '#eq-panel button:hover{color:#e5f2ea;border-color:#5a6b62}',
+    '#eq-panel button.on{background:#1f3d33;color:#6ee7b7;border-color:#2f6b56}',
+    '#eq-panel .eq-x{margin-left:auto}',
+    '#eq-panel svg{display:block}',
+    '#eq-panel .eq-foot{font-size:9.5px;color:#5f6b66;text-align:center;margin:1px 0 0}',
+    '.ctrl.eq-on{border-color:var(--accent-3,#2dd4bf);color:var(--accent-3,#2dd4bf)}',
+    '.lib-sum{padding:9px 14px;font-size:12.5px;color:#8b968f;border-bottom:1px solid rgba(255,255,255,.05)}',
+    '.row.more-row{cursor:pointer;opacity:.72}',
+    '.row.more-row:hover{background:rgba(45,212,191,.08);opacity:1}',
+    '.row.more-row .cov{font-size:15px;color:#6ee7b7}'
+  ].join('');
+  document.head.appendChild(css);
+
+  const p = document.createElement('div');
+  p.id = 'eq-panel';
+  p.hidden = true;
+
+  const head = document.createElement('div');
+  head.className = 'eq-head';
+  head.innerHTML = '<span class="eq-title">EQUALIZER</span><div class="eq-presets">' +
+    '<button data-p="flat">平直</button><button data-p="pop">流行</button>' +
+    '<button data-p="rock">摇滚</button><button data-p="vocal">人声</button>' +
+    '<button data-p="bass">低音</button></div><button class="eq-x" id="eq-close">✕</button>';
+  p.appendChild(head);
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.id = 'eq-svg';
+  svg.setAttribute('viewBox', '0 0 ' + EQ_VB_W + ' ' + EQ_VB_H);
+  svg.setAttribute('width', EQ_VB_W);
+  svg.setAttribute('height', EQ_VB_H);
+  svg.innerHTML =
+    eqGridSVG() +
+    '<defs><linearGradient id="eqg" x1="0" y1="0" x2="0" y2="1">' +
+    '<stop offset="0%" stop-color="#6ee7b7" stop-opacity=".38"/>' +
+    '<stop offset="100%" stop-color="#2dd4bf" stop-opacity=".05"/></linearGradient></defs>' +
+    '<polygon id="eq-area" points="" fill="url(#eqg)"/>' +
+    '<polyline id="eq-curve" points="" fill="none" stroke="#6ee7b7" stroke-width="2.1" ' +
+    'stroke-linejoin="round" stroke-linecap="round"/>' +
+    eqPointsSVG() +
+    eqFreqLabelsSVG();
+  p.appendChild(svg);
+
+  const foot = document.createElement('div');
+  foot.className = 'eq-foot';
+  foot.textContent = '拖动频点上下调 · 双击归零 · 单位 dB';
+  p.appendChild(foot);
+  document.body.appendChild(p);
+
+  /* —— 拖动：只认那 11 个点。两个点之间是直线，不能拉 —— */
+  let dragI = -1;
+  function applyFromEvent(e){
+    const r = svg.getBoundingClientRect();
+    const y = (e.clientY - r.top) * (EQ_VB_H / r.height);
+    let v = 12 - (y - EQ_PLOT_TOP) / EQ_PLOT_H * 24;
+    v = Math.max(-12, Math.min(12, Math.round(v * 2) / 2));
+    eqSetGain(dragI, v);
+    eqRender();
+  }
+  /* 命中判定按几何距离找最近的频点，不依赖点到那个 15px 的小圈上：
+     频点本身只有 4.4 半径，斜着点很容易差几个像素就落空。 */
+  function nearestBand(e){
+    const r = svg.getBoundingClientRect();
+    const vx = (e.clientX - r.left) * (EQ_VB_W / r.width);
+    const vy = (e.clientY - r.top)  * (EQ_VB_H / r.height);
+    let best = -1, bd = 1e9;
+    for(let i = 0; i < EQ_BANDS.length; i++){
+      const dx = Math.abs(eqX(i) - vx), dy = Math.abs(eqY(eqGains[i] || 0) - vy);
+      const d = dx + dy * 0.55;
+      if(d < bd){ bd = d; best = i; }
+    }
+    if(best < 0) return -1;
+    const dx = Math.abs(eqX(best) - vx), dy = Math.abs(eqY(eqGains[best] || 0) - vy);
+    return (dx <= 26 && dy <= 34) ? best : -1;   // 只认点附近，两个点之间的直线拉不动
+  }
+  svg.addEventListener('pointerdown', function(e){
+    const i = nearestBand(e);
+    if(i < 0) return;
+    e.preventDefault();
+    dragI = i;
+    try{ svg.setPointerCapture(e.pointerId); }catch(_){ }
+    applyFromEvent(e);
+  });
+  svg.addEventListener('pointermove', function(e){
+    if(dragI < 0) return;
+    e.preventDefault();
+    applyFromEvent(e);
+  });
+  ['pointerup', 'pointercancel'].forEach(function(ev){
+    svg.addEventListener(ev, function(){ dragI = -1; });
+  });
+  svg.addEventListener('dblclick', function(e){
+    const i = nearestBand(e);
+    if(i < 0) return;
+    eqSetGain(i, 0);
+    eqRender();
+  });
+
+  head.addEventListener('click', function(e){
+    const b = e.target.closest('button[data-p]');
+    if(!b) return;
+    eqApplyAll(EQ_PRESETS[b.dataset.p] || EQ_PRESETS.flat);
+    Array.prototype.forEach.call(head.querySelectorAll('button[data-p]'), function(x){
+      x.classList.toggle('on', x === b);
+    });
+    toast('EQ 预设：' + b.textContent);
+  });
+  document.getElementById('eq-close').addEventListener('click', function(){
+    p.hidden = true;
+    document.getElementById('btn-eq').classList.remove('on');
+  });
+
+  const btn = document.getElementById('btn-eq');
+  if(btn){
+    btn.addEventListener('click', function(){
+      p.hidden = !p.hidden;
+      btn.classList.toggle('on', !p.hidden);
+      if(!p.hidden) eqRender();
+    });
+  }
+  eqRender();
+}
+
 function setupAnalyser(){
   if(analyser) return;
   try{
@@ -3320,7 +3844,9 @@ function setupAnalyser(){
     lowGain.connect(merger,0,0);
     lowGain.connect(merger,0,1);
 
-    merger.connect(analyser); analyser.connect(audioCtx.destination);
+    // 均衡器串在 merger 与 analyser 之间，消原声也走 EQ
+    eqFilters = buildEQChain(merger, analyser);
+    analyser.connect(audioCtx.destination);
     karaokeNodes = { vocalGain, lowGain };
   }catch(e){ /* 波形/消原声不可用时静默降级 */ }
 }
@@ -3636,6 +4162,7 @@ const LOOKS=[
   {id:'skin-clay',     name:'黏土',            sw:'linear-gradient(160deg,#a48bff,#7c5cff)', viz:true },
   {id:'skin-swiss',    name:'瑞士极简',        sw:'linear-gradient(135deg,#ffffff 50%,#111111 50%)', viz:false},
   {id:'skin-lumen',    name:'透明灯箱',        sw:'radial-gradient(circle at 50% 45%,#ffb547 0 34%,#000 36%)', viz:true },
+  {id:'skin-winamp',   name:'Winamp 经典',     sw:'linear-gradient(180deg,#3a3a3a 52%,#0b0f0b 52%)', viz:true },
   /* 纯配色（材质不变，只换色），排后面 */
   {id:'',              name:'深蓝 · 原配色',   sw:'#4da8ff', viz:true, sep:true },
   {id:'theme-violet',  name:'暗紫',            sw:'#a86bff', viz:true },

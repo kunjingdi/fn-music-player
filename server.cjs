@@ -47,9 +47,21 @@ let dl = null;
 try { dl = require('./downloader.cjs'); }
 catch (e) { console.warn('[下载] downloader.cjs 加载失败：' + e.message + '（搜索/下载不可用）'); }
 
+/** 把当前连着的 NAS 主机喂给下载器候选列表。
+    桌面版：下载器跑在 NAS 上，本机 127.0.0.1 探不到 —— 不喂的话 Windows 端搜歌永远"找不到下载器" */
+function syncDlHosts(base) {
+  if (!dl || typeof dl.setExtraHosts !== 'function') return;
+  try {
+    const u = new URL(base);
+    if (u.hostname) dl.setExtraHosts([u.hostname]);
+  } catch (e) {}
+}
+
 const PORT = Number(process.env.PORT) || 8530;
 const HOST = process.env.FN_HOST || '127.0.0.1';   // 桌面版只听本机；容器里设 0.0.0.0
-const VERSION = '2.1.2';
+// 版本号跟 package.json 走，别再手写 —— 手写过一次，打 2.1.3 的包横幅还显示 2.1.2
+let VERSION = '2.1.3';
+try { VERSION = require('./package.json').version || VERSION; } catch (e) {}
 const ROOT = __dirname;
 // 数据目录：Electron 打包后 asar 只读，数据要写到用户目录；独立 node 运行时写回 ROOT
 // 用函数延迟读取，因为 Electron 主进程在 app ready 后才设置 FN_MUSIC_DATA_DIR
@@ -181,9 +193,22 @@ function json(res, code, obj) {
 }
 
 function normalizeBase(raw) {
-  let b = (raw || '').trim().replace(/\/+$/, '');
+  let b = (raw || '').trim();
   if (!b) return '';
-  if (!/^https?:\/\//i.test(b)) b = 'http://' + b;
+
+  /* 飞牛远程访问有两种写法，用户经常粘错：
+       https://fnos.net/kknxs008    ← 远程访问「网关页」，任何路径都返回同一个网页壳，
+                                      服务端拿它当接口基址只会收到 HTML
+       https://kknxs008.fnos.net    ← 这才是 NAS 本身，/music/api/v1 能直连
+     后一种是真正能用的，所以见到前一种自动换掉。 */
+  const m = b.match(/^(?:https?:\/\/)?(?:www\.)?fnos\.net\/([A-Za-z0-9_-]{3,40})\/?$/i);
+  if (m) return 'https://' + m[1].toLowerCase() + '.fnos.net';
+
+  b = b.replace(/\/+$/, '');
+  if (!/^https?:\/\//i.test(b)) {
+    // 飞牛自家的域名只走 https（HTTP 会被 301 到网关页，POST 直接丢 body）
+    b = (/^(?:[a-z0-9-]+\.)*fn(?:os|nas)\.net(:\d+)?$/i.test(b) ? 'https://' : 'http://') + b;
+  }
   return b;
 }
 
@@ -220,6 +245,38 @@ async function checkDockerBase(base) {
 function dockerBase() {
   const s = loadSettings();
   return normalizeBase(s.dockerBase || process.env.FN_DOCKER_BASE || '');
+}
+
+/* 存的曲库地址连不上时自动纠正。
+   实际踩过的坑：NAS 换了 IP（.110 → .90）、容器重装换了端口，
+   settings 里那行旧地址一直留着 —— 表现是「远程曲库连不上 / 电视搜不到」，
+   但界面上看不出是地址过期了，人会以为是播放器坏了。
+   这里启动后体检一次，不合格就在局域网里重新找一台，写回设置。 */
+let healing = false;
+async function healDockerBase() {
+  if (healing) return;
+  const cur = dockerBase();
+  if (!cur) return;                    // 没配过就别乱扫（纯飞牛用户、下载版）
+  healing = true;
+  try {
+    const chk = await checkDockerBase(cur);
+    if (chk.ok) return;
+    console.log('[曲库] 存的地址不可用（' + chk.msg + '），开始在局域网里重新找…');
+    const r = await discoverServers();
+    const list = (r && r.servers) || [];
+    if (!list.length) {
+      console.log('[曲库] 没找到别的曲库，保留原地址 ' + cur);
+      return;
+    }
+    // 曲库最大的优先（同一台机器 8530/8580 都通时已在发现里去过重）
+    const best = list.slice().sort((a, b) => (b.libCount || 0) - (a.libCount || 0))[0];
+    saveSettings({ dockerBase: best.base });
+    console.log('[曲库] 已自动改为 ' + best.base + '（' + (best.libCount || 0) + ' 首，' + (best.version || '版本未知') + '）');
+  } catch (e) {
+    console.log('[曲库] 自动纠正失败：' + (e && e.message));
+  } finally {
+    healing = false;
+  }
 }
 
 // —————————————— 局域网自动发现（协议 v1）——————————————
@@ -629,7 +686,9 @@ async function proxyUpstream(req, res, upstreamPath) {
     headers: buildUpstreamHeaders(req.method, pathname, queryObj, bodyStr, req.headers),
     body: bodyStr || undefined,
     redirect: 'follow',
-    signal: isStream ? undefined : AbortSignal.timeout(20000), // 列表/搜索/歌词加 20s 超时，避免慢接口挂死
+    signal: isStream ? undefined
+      : AbortSignal.timeout(/search/i.test(upstreamPath) ? 30000 : 20000),
+    // 搜索第一次要在 NAS 上建索引，实测 8~13 秒，20 秒有时不够，给 30 秒；列表接口维持 20 秒
   });
 
   let upstream;
@@ -725,6 +784,7 @@ async function doLogin(base, username, password, accessCode) {
   try { data = await resp.json(); } catch (e) { return { ok: false, code: -1, msg: '服务器响应异常（HTTP ' + resp.status + '）' }; }
   if (data && data.code === 0 && data.data && data.data.userToken) {
     session.base = base;
+    syncDlHosts(base);   // 在线搜歌要探这台 NAS 上的下载器
     session.token = data.data.userToken;
     session.username = username;
     session.password = password; // 仅存内存，用于 token 过期后自动重登
@@ -942,6 +1002,24 @@ const server = http.createServer(async (req, res) => {
     };
     if (p === '/' || p === '/index.html') return sendHtml(isFull ? 'index.html' : 'download.html');
     if (p === '/download.html') return sendHtml('download.html');
+
+    // 图标：浏览器会无条件要 /favicon.ico，不给就每次开页面都留一条 404 红字，
+    // 标签页也没图标。桌面版带 icon.ico，容器里没有就回 204 让浏览器安静下来。
+    if (p === '/favicon.ico' || p === '/icon.ico') {
+      const fp = path.join(ROOT, 'icon.ico');
+      if (!fs.existsSync(fp)) { res.writeHead(204); return res.end(); }
+      const buf = fs.readFileSync(fp);
+      res.writeHead(200, { 'Content-Type': 'image/x-icon', 'Cache-Control': 'public, max-age=86400', 'Content-Length': buf.length });
+      return res.end(buf);
+    }
+    if (p === '/icon_512.png' || p === '/icon.png') {
+      const name = p === '/icon.png' ? 'icon.png' : 'icon_512.png';
+      const fp = path.join(ROOT, name);
+      if (!fs.existsSync(fp)) { res.writeHead(204); return res.end(); }
+      const buf = fs.readFileSync(fp);
+      res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400', 'Content-Length': buf.length });
+      return res.end(buf);
+    }
     res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('Not Found');
   } catch (e) {
@@ -1002,6 +1080,8 @@ server.on('error', (e) => {
     openAppWindow(url);
     // 启动后：若本地存了记住的密码，自动静默登录（前端 /api/session 轮询会再兜底一次）
     tryAutoLogin();
+    // 再晚一点体检远程曲库地址（别和登录抢带宽、别拖慢首帧）
+    setTimeout(() => { healDockerBase().catch(() => {}); }, 2500);
   });
 })();
 
